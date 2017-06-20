@@ -295,7 +295,7 @@ En el codigo a continuación muestro tanto el código para la función **typeInf
           _:t         -> mkName t
 ```
 
-Las otras tres funciones se encargan de utilizar dicha información extraida del tipo de datos para crear una instancia adecuada de la clase Allv para dicho tipo de datos.
+Las otras tres funciones se encargan de utilizar dicha información extraida del tipo de datos para crear una instancia adecuada de la clase **Allv** para dicho tipo de datos.
 
 La primera de ellas y la más externa en dicho proceso es **gen_allv**, la cual ademas de llamar a **typeInfo** para extraer la información del tipo y pasarsela a las subfunciones también es donde se define como se formará exactamente la nueva función **allv** dentro de la instancia del tipo. Adjunto el código de la función gen_allv.
 
