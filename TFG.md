@@ -295,8 +295,149 @@ En el codigo a continuación muestro tanto el código para la función **typeInf
           _:t         -> mkName t
 ```
 
+Las otras tres funciones se encargan de utilizar dicha información extraida del tipo de datos para crear una instancia adecuada de la clase Allv para dicho tipo de datos.
+
+La primera de ellas y la más externa en dicho proceso es **gen_allv**, la cual ademas de llamar a **typeInfo** para extraer la información del tipo y pasarsela a las subfunciones también es donde se define como se formará exactamente la nueva función **allv** dentro de la instancia del tipo. Adjunto el código de la función gen_allv.
+
+```haskell
+  gen_allv :: Name -> Q Dec
+  gen_allv typName =
+    do (TyConI d) <- reify typName
+        --Extract all the type info of the data type 
+       (t_name,noSimplifiedName,cInfo,consts,typesCons) <- typeInfo (return d)
+       --We call to gen_instance with a name for the class, the name of the constructor,
+       --a list of info of the constructors, the constructors itself, lists containing
+       --the constructors, name of the data-type without being simplified, and lastly
+       --the function to generate the body of the function of the class.            
+       i_dec <- gen_instance (mkName "Allv") (conT t_name) cInfo consts
+                              typesCons noSimplifiedName (mkName "allv", gen_body)
+       return i_dec -- return the instance declaration
+              -- gen_body is the function that we pass as an argument to gen_instance
+              --and later on is used to generate the body of the allv function 
+              --for a determined data-type
+         where gen_body :: [Int] -> [Name] -> [Name]-> [ExpQ]
+               gen_body _ [] [] [] = []
+               gen_body (i:is) (c:cs) (f:fs) --cInfo consts listOfF 
+                  | null cs = [appsE (mapE:constructorF:(allvFunc i))] ++
+                                (gen_body is cs fs rs)
+                  | otherwise = [appsE (varE '(++):[appsE (mapE:constructorF:
+                              (allvFunc i))] ++ gen_body is cs fs rs)]
+                        where --constructorF decided to use the data constructor
+                              --if having just one parameter or to use a function if
+                              --having more than one. This is duo to the fact that
+                              --if the data constructor has more than one parameter
+                              --we need to apply compose to them and then apply a
+                              --function over the result of compose.
+                              constructorF 
+                                  | i > 1 = varE f
+                                  | otherwise = conE c
+                              --mapE, composeE and allvE are three auxiliar function
+                              --that serve to get the expresion equivalent to those 3
+                              --functions in template haskell
+                              mapE = varE 'map
+                              composeE = varE 'compose
+                              allvE = varE 'allv
+                              moveHead (x1:x2:xs) = x2:x1:xs
+
+                              allvFunc 1 = [appsE [allvE]]
+                              allvFunc n = [appsE (composeE:[allvE] ++ allvFunc (n-1))]
+```
+
+Vamos a echar un vistazo mas de cerca a dicha función **gen_body** dentro de la clausula **where** y al tipo de comprobaciones o analisis sobre el tipo que realiza. En primer lugar nombrar lo que significa cada una de las cuatro listas que recibe como parámetro dicha función:
+  - La primera de ellas contiene los números de parámetros de cada uno de los diferentes constructores.
+  - La segunda contiene los nombres de los diferentes constructores.
+  - La tercera una lista de nombres de **f's** entre **f~1~** y **f~n~** siendo n el numero de constructores distintos para el tipo de datos.
+**Gen_body** se encarga de analizar el número de parámetros de cada uno de los constructores ya que si cuenta con un único parámetro, se puede utilizar el nombre del propio constructor sin ningún problema pero en caso de tener más de un parámetro debido a que compose devuelve la lista compuesta como una lista de tuplas, es necesario utilizar una función auxiliar **f** para realizar la aplicación del constructor sobre los elementos de la tupla en lugar de sobre la tupla en si.
+Aparte de esto **gen_body** se encarga de utilizando **TH** conseguir juntar todas las partes que fueron en parte preprocesadas en **gen_clause**
+
+La siguiente función a tratar, **gen_instance** se encarga únicamente de crear una instancia de la clase **Allv** para el nuevo tipo de datos (parámetro **for_type**) y adjuntar a dicha instancia la definición de la función **allv** que se crea en **gen_clause**. Adjunto el código de **gen_instance**
+
+```haskell
+  --Construct an instance of class class_name for type for_type
+  --with a corresponding function  to build the method body
+  gen_instance :: Name -> TypeQ -> [Int] -> [Name]
+                    -> [[Type]] -> Name -> Func -> DecQ
+  gen_instance class_name for_type cInfo consts typesCons typeName_nosimp func =
+    instanceD (cxt [])
+      (appT (conT class_name) for_type) 
+      [(func_def func)] 
+        where func_def (func_name, gen_func)-- extracts func_name and gen_func
+                  = funD func_name -- method name
+                    -- generate function body
+                    [gen_clause gen_func cInfo consts typesCons typeName_nosimp]
+```
+Por último tenemos la función **gen_clause** que se encarga de crear la definición de la función **allv** para el tipo de datos, usando para ello la función **gen_body** que había sido definida anteriormente en **gen_allv**.
+Ademas cuenta con una serie de funciones auxiliares que realizan parte del procesamiento:
+  - **listOfFOut** se encarga de crear la lista de nombres de variables entre **f~1~** y **f~n~** para aquellos casos en los cuales los constructores tienen más de un parámetro.
+  - **isRec** devuelve una lsita de booleanos en la cual cada posición indica si el constructor en dicha posición es recursivo o no.
+  - **reorderL** se encarga de reordenar los constructores (lo cual es equivalente a las listas con la información por cada constructor) de manera que queden en primer lugar aquellos que no son recursivo y al final los que si lo son. Esto es necesario ya que los constructores recursivos harán uso de aquellos que no lo son y por ello estos deben estar ya definidos.
+  - **gen_wheres** que se encargará de definir las clausulas where necesarias para todos aquellos constructores con más de un parámetro que necesiten utilizar una función auxiliar (que son las representadas por las **f's**).
+Adjunto el código de **gen_clause**
+
+```haskell
+  -- Generate the pattern match and function body for a given method and
+-- a given data-type. gen_func is the function that generates the function body
+gen_clause :: Gen_func -> [Int] -> [Name] -> [[Type]] -> Name -> ClauseQ
+gen_clause gen_func cInfo consts typesCons typeName_nosimp = 
+      (clause []
+             --here we execute the gen_function to generate the body of the function
+            (normalB $ head (gen_func cInfoOrd constsOrd listOfFOutOrd))
+             --this other one generates the where clause of the function
+             (gen_wheres cInfoOrd constsOrd listOfFOutOrd))
+      where --listOfFOut generates a fresh list of "Name" for n different f's
+            --this f's are used when one of the data types has more than one
+            --parameter 
+            listOfFOut = listOfF (length consts)
+            listOfF 0 = []
+            listOfF n = (mkName ("f"++ show n)):(listOfF (n-1))
+            --isRec checks which of the constructors of the given data-type
+            --are recursive and which others are not. It returns a boolean list
+            --where true means to be recursive and false to not to be recursive.
+            isRec = isRecAux typesCons
+            isRecAux [] = []
+            isRecAux (x:xs) = (or $ map (==(ConT typeName_nosimp)) x): isRecAux xs
+            --ReorderL reorders all this lists so they have all non recursive
+            --type constructors first and all recursive ones at the end
+            reorderL = auxFirst cInfo consts listOfFOut isRec 0 False
+            auxFirst is cs fs rs n foundRec
+                |n > ((length rs)-1) = (is, cs, fs, rs)
+                |foundRec && (not (rs!!n)) = auxFirst 
+                                              ((is!!n):(remove n is 0)) 
+                                              ((cs!!n):(remove n cs 0)) 
+                                              ((fs!!n):(remove n fs 0)) 
+                                              ((rs!!n):(remove n rs 0)) 0 False
+                |(not foundRec) && (rs!!n) = auxFirst is cs fs rs (n+1) (not foundRec)
+                |otherwise = auxFirst is cs fs rs (n+1) foundRec
+            --removes position n from the list (x:xs)
+            remove n (x:xs) actPos
+                |n==actPos = xs
+                |otherwise = x:(remove n xs (actPos+1))
+
+            --This four functions serve to take the reordered lists for those 4 lists
+            cInfoOrd = (\(x,_,_,_) -> x) reorderL
+            constsOrd = (\(_,x,_,_) -> x) reorderL
+            listOfFOutOrd = (\(_,_,x,_) -> x) reorderL
+            isRecOrd = (\(_,_,_,x) -> x) reorderL
 
 
+            --gen_wheres is the auxiliar function that generates the where "clause"
+            --of the function when necesary.
+            gen_wheres [] [] [] = []
+            gen_wheres (n:ns) (c:cs) (f:fs) --gen_wheres numParam consts listOfF 
+                | n > 1 = funD f (bodyFunc listOfVar c):gen_wheres ns cs fs
+                | otherwise = gen_wheres ns cs fs
+                  where listOfVar = listVariab n
+                        listVariab 0 = []
+                        listVariab n = (mkName ("x"++ show n)):(listVariab (n-1))
+            --generates the body for the functions in the where clause when necessary.
+            bodyFunc listOfVar constructorName = [clause (tupleParam listOfVar)
+                                                  (normalB (appsE ((conE constructorName):
+                                                    (map varE listOfVar)))) []]
+
+            tupleParam (v:vs) --tupleParam listVars
+                | (null vs) = [varP v]
+                | otherwise = [tupP ((varP v):tupleParam vs)]
+```
 
 
 ## 6. Related
