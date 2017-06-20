@@ -198,7 +198,7 @@ Para realizar la composición de dos listas seguimos un método de retículo com
 Dadas dos listas a combinar vamos realizando la combinación de las listas por diagonales, asegurandonos asi de que aunque alguna de las dos listas o ambas sean infinitas no vamos a dejar ningun valor del nuevo tipo de datos sin calcular por el medio, el problema de generar la nueva lista por diagonales viene de que dicha lista no se encuentra ordenada por tamaño de sus elementos.
 Dicha combinación de listas infinitas podía ser realizada sin problemas usando Generics pero el problema llegaba a la hora de querer devolver los n primeros valores de un tamaño menor o igual a m ya que para ello debiamos ordenar la lista infinita y encontramos el problema de que en dichas listas infinitas los elementos de un tamaño siempre eran infinitos y que siempre habría algun elemento a mayores de tamaño menor o igual a m aunque fuera despues de muchos elementos por el medio que no lo fueran. Dicho problema fue el por que tuvimos que pensar en utilizar **Template Haskell** en lugar de **Generics**.
 
-En la versión definitiva del programa esta funcionalidad de crear una instancia de **Allv** para los tipos de datos definidos por el usuario es realizada en **TemplateAllv**, con la ayuda de la ya nombrada compose que tiene la siguiente forma.
+En la versión definitiva del programa la clase **Allv** esta funcionalidad de crear una instancia de **Allv** para los tipos de datos definidos por el usuario es realizada en **TemplateAllv**, con la ayuda de la ya nombrada compose que tiene la siguiente forma.
 
 ```haskell
   compose ::[a] -> [b] -> [(a,b)]
@@ -294,6 +294,8 @@ En el codigo a continuación muestro tanto el código para la función **typeInf
           _:[]        -> mkName s
           _:t         -> mkName t
 ```
+
+
 
 
 
