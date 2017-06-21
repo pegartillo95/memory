@@ -19,6 +19,54 @@ The design of the IR was done with the aim of easing the above tasks as much as 
 
 ### 2.2: QuickCheck
 
+El segundo punto de los preliminares está dedicado a Quickcheck [@quickcheck] una herramienta de Haskell pensada para testear funciones en Haskell sobre un conjunto de casos de prueba generados de manera aleatoria. Dicho programa resultó ser de gran ayuda pues tiene ideas similares a lo que queriamos conseguir con nuestro proyecto ya que busca de alguna manera crear un programa que valga para testear cualquier función aunque también cuenta con grandes diferencias sobre todo en la generación de los casos de prueba, ya que nuestro proyecto no los genera de manera aleatoria sino exhaustiva.
+
+##### Ejemplo de funcionamiento del programa
+
+En primer lugar vamos a observar un ejemplo de una función **reverse** que se encarga de invertir una lista, la cual cumple las tres siguientes reglas que son ciertas para cualquier lista finita:
+```haskell
+  reverse [x] = [x]
+  reverse (xs++ys) = reverse ys++reverse xs
+  reverse (reverse xs) = xs
+```
+Vamos a escribirlas ahora como funciones de Haskell para ser asi capaces de testearlas:
+
+```haskell
+  prop_RevUnit x = 
+    reverse [x] == x
+
+  prop_RevApp xs ys = 
+    reverse (xs++ys) == reverse ys++reverse xs
+
+  prop_RevRev xs = 
+    reverse (reverse xs) == xs 
+```
+
+Ahora lanzamos el programa **Quickcheck** para comprobar si pasa todos los casos de prueba.
+```haskell
+  Main> quickCheck propRevApp
+  OK: passed 100 tests.
+```
+El programa nos comunica que de los 100 casos de prueba (que es la cantidad por defecto pero puede cambiarse) nuestro programa pasa todos ellos.
+Veamos ahora que pasa en caso de que nuestra función no esté bien definida. Definiremos para ellos una de las anteriores de manera incorrecta.
+
+```haskell
+  prop_RevApp2 xs ys = 
+    reverse (xs++ys) == reverse xs++reverse ys
+```
+y llamamos a dicha función desde **quickcheck**
+
+```haskell
+  Main> quickcheck prop_RevApp2
+  Falsifiable, after 1 tests:
+  [2]
+  [-2,1]
+```
+
+Aqui podemos observar que en caso de fallo quickcheck nos devuelve el contraejemplo a nuestra función. Hay que tener en cuenta que siempre nos devolverá un contra ejemplo de tamaño mínimo. Lo que nos dice este contra ejemplo esque nuestra definición ha fallado en el primer test y que en dicho caso las respectivas listas para las que ha sido probado falso son [2] y [-2,1].
+
+
+
 ### 2.3: Generics
 
 El siguiente punto a tratar en estos preliminares es la librería Generics [@generics] de Haskell, una librería utilizada principalmente para la generación automática de instancias de funciones correctas para cualquiera que sea el tipo de datos. En el caso de este proyecto Generics apareció como una librería necesaria pues debiamos conseguir escribir funciones como "compose" de manera que funcionaran para cualquier tipo de datos, incluidos los definidos por el usuario y de los cuales no podemos tener conocimiento en adelantado.
@@ -372,7 +420,9 @@ Ademas cuenta con una serie de funciones auxiliares que realizan parte del proce
   - **isRec** devuelve una lsita de booleanos en la cual cada posición indica si el constructor en dicha posición es recursivo o no.
   - **reorderL** se encarga de reordenar los constructores (lo cual es equivalente a las listas con la información por cada constructor) de manera que queden en primer lugar aquellos que no son recursivo y al final los que si lo son. Esto es necesario ya que los constructores recursivos harán uso de aquellos que no lo son y por ello estos deben estar ya definidos.
   - **gen_wheres** que se encargará de definir las clausulas where necesarias para todos aquellos constructores con más de un parámetro que necesiten utilizar una función auxiliar (que son las representadas por las **f's**).
-Adjunto el código de **gen_clause**
+  - **tupleParam** crea las tuplas de parámetros para cada una de las funciones auxiliares **f**.
+
+  Adjunto el código de **gen_clause**
 
 ```haskell
   -- Generate the pattern match and function body for a given method and
