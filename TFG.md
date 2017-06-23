@@ -3,7 +3,7 @@ title: TFG
 bibliography: bibliography.bib
 ---
 
-##Preliminares
+# 2. Preliminares
 
 ### 2.1: CAVI-ART Project
 The first point I would like to talk about in this preliminary section is the CAVI-ART project, that consists of a project being developped here at the UCM of which my Final Degree Project is part. 
@@ -315,8 +315,9 @@ En tercer lugar **reifyFixity** devuelve la ¨fixity¨ de los argumentos de la f
 
 De esta manera la cosificacion devuelve un resultado que puede ser analizado y utilizado en otros cálculos, pero hay que recordar que al tratarse de una herramienta del lenguaje para acceder a la tabla de símbolos y estar encapsulado dentro de la monada Q no puede ser usada como una funcion, por ejemplo con la función map (map reifyType xs sería incorrrecto).
 
+\pagebreak
 
-## 3. Las clases Allv, Sized, Arbitrary
+# 3. Las clases Allv, Sized, Arbitrary
 
 ### 3.1: Black box testing en nuestro contexto
 
@@ -327,7 +328,88 @@ En el caso de nuestro proyecto nos decidimos por el método de caja negra pues q
 
 La idea principal detras de nuestro proyecto era principalmente la inmediatez y la comodidad del usuario, es decir que para probar un programa no necesitara escribir código extra aparte del ya existente programa si no que solo debe especificar como quiere que se generen los casos de prueba y los rangos de los dominios a usar y con eso ser ya capaz de probar su programa lo cual se ajusta mucho mas a la idea de testeo de caja negra.
 
+Las posibles maneras en las que el usuario puede especificar que se generen los casos de prueba para cada argumento son 3:
+  - O generar *n* casos de prueba de manera aleatoria.
+  - O coger *n* casos de prueba de tamaño menor o igual a *m*.
+  - O coger los *n* primeros casos de prueba de la lista de todos los valores, sea cual sea su tamaño.
+
 ### 3.2: Sized
+
+En la estructura del proyecto **Sized** está pensada como la clase externa que hereda de **Allv**. A su vez es la clase que se ocupa de a partir de la lista **allv** de un tipo de datos devolver la lista de los casos de prueba. Esto se realiza mediante dos funciones:
+  - **sized** que devuelve los *n* primeros casos menores o iguales a un tamaño *m*.
+  - **smallest** que devuelve  los *n* primeros casos de la lista **allv** según su posicion y sin importar su tamaño.
+
+```haskell
+  class (Allv a) => Sized a where
+    -- This function returns the first n elements of size lower or equal m from the "allv" list
+    sized::Int->Int->[a]
+    sized n m = take n (filter (\x-> (size x) <= m) allv)
+
+    --This function takes an integer n and returns the n first elements of the "allv" list
+    smallest::Int->[a]
+    smallest n = take n allv
+```
+
+En esta clase del proyecto decidimos implementar el concepto de tamaño de un elemento mediante la librería Generics explicada anteriormente pues de esa manera podríamos tener una representación del tamaño independiente del tipo y no hay que definirlo para cada tipo nuevo creado por el usuario.
+
+En primer lugar debemos definir la clase externa de la parte de Generics que será la que nosotros usemos. En ella solo debemos definir las funciones que queremos que tenga y como se comunica con la clases internas de **Generics**. Primero definimos la funcion en si que será una lista que dada un elemento de un tipo cualquiera nos devuelva un entero que representará su tamaño.  
+
+```haskell
+   size ::  a -> Int
+```
+Despues debemos definir como se comunica la función **size** externa con la versión genérica **gsize** para obtener de esta el valor a devolver. En este caso usamos la función from que lo que hace es transformar un valor en su representación no genérica y transformarlo a su representación genérica para que pueda ser manipulado en las diferentes funciones. En este caso es simple pues el valor del tamaño obtenido por **gsize** será el mismo devuelto por nuestra función **size**
+
+```haskell
+    size a = gsize (from a)
+```
+
+En primer lugar creamos la clase interna **GSized** y definimos la función **gsize**
+
+````haskell
+  -- | This is the generic, non-visible class
+  class GSized f where
+    gsize :: f a -> Int
+```
+
+En el caso base, un constructor sin argumentos el tamaño devuelto por gsize es 0.
+
+````haskell
+  -- | Unit: used for constructors without arguments
+  instance GSized U1 where
+    gsize U1 = 0
+```
+
+En cambio cuando se trata de un tipo compuesto por otros dos tipos, el tamaño del tipo es la suma de los tamaños de los tipos que los componen.
+
+```haskell
+  -- | Products: encode multiple arguments to constructors
+  instance (GSized a, GSized b) => GSized (a :*: b) where
+    gsize (x :*: y) = gsize x + gsize y
+```
+
+En esta tercera instancia definimos el comportamiento cuando el tipo tiene mas de un constructor posible. En este caso si elegimos el constructor de la derecha el tamaño del tipo será el tamaño del tipo de la derecha y similar si elegimos el tipo de la izquierda.
+
+```
+  -- | Sums: encode choice between constructors
+  instance (GSized a, GSized b) => GSized (a :+: b) where
+    gsize (L1 x) = gsize x
+    gsize (R1 x) = gsize x
+```
+
+Podemos observar que la función sólo está definida para el caso en el que tenemos exactamente dos constructores diferentes pero esto es debido a que el operador asocia de dos en dos. Por ejemplo si tuvieramos un tipo defindo:
+
+```haskell
+  data MyExp = Const Int  | Prod MyExp MyExp | Var Char | Sum MyExp MyExp
+```
+se aplicaría primero sobre los constructores **Const** y **Prod**, despues sobre **Var** y **Sum** y finalmente sobre los resultados de cada pareja.
+
+Por último tenemos la instancia utilizada para trabajar con metainformación del tipo. En el caso de **gsize** al no es necesaria simplemente llamamos de nuevo a la funcion **gsize** ignorando dicha metainformación.
+
+```haskell
+  -- | Meta-information (constructor names, etc.)
+  instance (GSized f) => GSized (M1 i c f) where
+    gsize (M1 x) = gsize x
+```
 
 ### 3.3: Allv/TemplateAllv
 
@@ -337,7 +419,7 @@ En un primer lugar esta clase estaba pensada para utilizar la librería Generics
 Lo cual entraba en conflicto con la manera en la que generábamos las listas de **allv** para los tipos definidos por el usuario.
 Para realizar la composición de dos listas seguimos un método de retículo como el que muestra la siguiente figura. 
 
-//////////IMAGEN RETICULO///////////////////// 
+//////////IMAGEN EXPLICATIVA COMBINE///////////////////// 
 
 Dadas dos listas a combinar vamos realizando la combinación de las listas por diagonales, asegurandonos asi de que aunque alguna de las dos listas o ambas sean infinitas no vamos a dejar ningun valor del nuevo tipo de datos sin calcular por el medio, el problema de generar la nueva lista por diagonales viene de que dicha lista no se encuentra ordenada por tamaño de sus elementos.
 Dicha combinación de listas infinitas podía ser realizada sin problemas usando Generics pero el problema llegaba a la hora de querer devolver los n primeros valores de un tamaño menor o igual a m ya que para ello debiamos ordenar la lista infinita y encontramos el problema de que en dichas listas infinitas los elementos de un tamaño siempre eran infinitos y que siempre habría algun elemento a mayores de tamaño menor o igual a m aunque fuera despues de muchos elementos por el medio que no lo fueran. Dicho problema fue el por que tuvimos que pensar en utilizar **Template Haskell** en lugar de **Generics**.
@@ -585,8 +667,14 @@ gen_clause gen_func cInfo consts typesCons typeName_nosimp =
                 | otherwise = [tupP ((varP v):tupleParam vs)]
 ```
 
+### 3.4: Arbitrary
 
-## 6. Related
+
+### 3.5: Instancias predefinidas
+
+\pagebreak
+
+# 6. Related
 
 ### 6.1: Korat
 
@@ -718,4 +806,4 @@ Esta diferencia de veinte veces más tests necesarios es debido a que el operado
 
 Por suerte existe un nuevo operador en *Lazy Smallcheck*, la conjunción parelela *\*&\**, la cual es falsa si cualquiera de sus operandos lo son y que resulta de gran utilidad tanto para conseguir que el programa necesite menos casos de prueba como para que no sea importante el orden en el que esten escritos las condiciones de la precondición.
 
-##References
+#References
