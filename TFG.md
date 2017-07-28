@@ -6,25 +6,25 @@ bibliography: bibliography.bib
 # 2. Preliminares
 
 ### 2.1: CAVI-ART Project
-The first point I would like to talk about in this preliminary section is the CAVI-ART project, that consists of a project being developped here at the UCM of which my Final Degree Project is part. 
+En esta seccion explicamos el proyecto CAVI-ART el cual es un proyecto actualmente en desarollo en la UCM y del cual forma parte mi TFG.
 
-The **CAVI-ART** platform consists of a set of tools aimed at assisting the programmer in the validation of programs written in a variety of languages. These aids include the automatic extraction and proving of verification conditions, the automatic proving of termination (whenever this is decidable by using the state-of-the-art technology), the automatic inference of some invariants, and the automatic generation and running of test-cases. Some of its results have been reported elsewhere.
+La plataforma **CAVI-ART** consiste en un conjunto de herramientas pensadas para ayudar al programador en la validacion de programas escritos en diferentes lenguajes. Estas ayudas incluyen la extracción automática y prueba de condiciones de verificación, la prueba automática de terminación (siempre que sea decidible usando la tecnología actual), la inferencia automática de algunos invariantes y la generación automática y ejecución de casos de prueba.
 
-A key aspect of the platform is its Intermediate Representation of programs (in what follows, IR). Source programs written in conventional languages such as C++, Java, Haskell, OCaml, and others, are translated to the IR, so that all the above mentioned activities are performed at the IR level. The intention is to program most of the platform tools once forever, independently of the source language at hand.
+Un aspecto clave de la plataforma es su Representación Intermedia de los programas (de aquí en adelante IR). Programas escritos en lenguajes convencionales como C++, Java, Haskell, OCaml y otros se traducen a la IR, sobre la cual se realizan todas las actividades mencionadas anteriormente. La intencion es programar la mayor parte de la plataforma una sola vez, de manera que sea independiente del lenguaje de programación utilizado.
 
-The design of the IR was done with the aim of easing the above tasks as much as possible. Our experience on static analysis led us to avoid the complications of mutable state, and also to a simple design having very few primitive constructions. The result was an IR very near to a desugared functional language with flattened expressions. We never thought on the IR as being executable code, but rather we looked at it as an abstract syntax on which it were easy to perform static analysis and formal verification .But on the last months we decided to convert the IR into executable code to make it possible running  language independent tests, and also building language independent testing tools. Most of the work done on testing, and almost all the existing testing tools are tied to a particular language.
+El diseño de la IR fue realizado con la intencion de facilitar las tareas nombradas con anterioridad tanto como fuera posible. Un diseño simple que cuenta con muy pocas construcciones primitivas. Nunca se pensó en la IR como código ejecutable sino como una sintaxis abstracta sobre la cual resultaria fácil realizar análisis estático y verificación formal. Pero en los últimos meses se decidió convertir la IR en código ejecutable, sobre la cual sería posible ejecutar pruebas independientes del lenguaje, y construir herramientas de testeo independientes del lenguaje. La mayoría del trabajo hecho en este campo y la mayoría de las herramientas de testeo existentes están ligadas a un lenguaje en concreto.(Fig 1)
 
-![Scheme of CAVI_ART project](imagenes/caviart.jpg "Scheme of CAVI_ART project")
+![Esquema del proyecto CAVI-ART](imagenes/caviart.jpg "Esquema del proyecto CAVI-ART")
 
 
 ### 2.2: QuickCheck
 
-El segundo punto de los preliminares está dedicado a **Quickcheck** [@quickcheck] una herramienta de Haskell pensada para testear funciones escritas en dicho lenguaje sobre un conjunto de casos de prueba generados de manera aleatoria. Dicho programa resultó ser de gran ayuda pues tiene ideas similares a lo que queríamos conseguir con nuestro proyecto ya que se trata tambien de un sistema de caja negra.
+**Quickcheck** [@quickcheck] es una herramienta de Haskell pensada para probar funciones escritas en dicho lenguaje sobre un conjunto de casos de prueba generados de manera aleatoria. Dicho programa resultó ser de gran ayuda pues tiene ideas similares a lo que queríamos conseguir con nuestro proyecto ya que se trata tambien de un sistema de prueba tipo caja negra.
 Aunque también cuenta con  algunas diferencias sobre todo en la generación de los casos de prueba, ya que **Quickcheck** los genera de manera aleatoria mientras que nuestro proyecto los genera de manera exhaustiva.
 
 ##### Ejemplo de funcionamiento del programa
 
-En primer lugar vamos a observar un ejemplo de una función **reverse** que se encarga de invertir una lista, la cual cumple las tres siguientes reglas que son ciertas para cualquier lista finita:
+En primer lugar vamos a observar un ejemplo de una función **reverse** que se encarga de invertir una lista, la cual cumple las tres siguientes propiedades que son ciertas para cualquier lista finita:
 ```haskell
   reverse [x] = [x]
   reverse (xs++ys) = reverse ys++reverse xs
@@ -64,7 +64,7 @@ y llamamos a dicha función desde **quickcheck**
   [-2,1]
 ```
 
-Aquí podemos observar que en caso de fallo **quickcheck** nos devuelve el contraejemplo a nuestra función. Hay que tener en cuenta que siempre nos devolverá un contra ejemplo de tamaño mínimo. Lo que nos dice esta vez esque nuestra definición ha fallado en el primer test y que en dicho caso las respectivas listas para las que ha sido probado falso son [2] y [-2,1].
+Aquí podemos observar que en caso de fallo **quickcheck** nos devuelve el contraejemplo a nuestra función. Hay que tener en cuenta que siempre nos devolverá un contra ejemplo de tamaño mínimo. Lo que nos dice esta vez es que nuestra definición ha fallado en el primer test y que en dicho caso las respectivas listas para las que ha sido probado falso son [2] y [-2,1].
 
 #####Leyes condicionales
 En algunos casos las leyes que queremos definir no pueden ser representadas mediante una simple función y solo son ciertas bajo unas precondiciones muy concretas. Para dichos casos **Quickcheck** cuenta con el operador de implicación **==>** para representar dichas leyes condicionales.
@@ -90,7 +90,7 @@ Debemos tener en cuenta una cosa más en cuanto a las leyes condicionales para a
   Arguments exhausted after 64 tests
 ```
 
-Lo cual significa que despues de generar el máximo número de casos de prueba (que por defecto son 1000) solo ha encontrado 64 de ellos que cumplan la condición. Dicho límite esta pensado para que el programa no busque indefinidamente en caso de que no haya más casos que cumplan la precondición si no que lo intente con un número razonable de casos de prueba, si no encuentra 100 tests válidos antes de dicho número entonces el programa simplemente anuncia cuantos tests pudo realizar correctamente.
+Lo cual significa que despues de generar el máximo número de casos de prueba (que por defecto son 1000) solo ha encontrado 64 de ellos que cumplan la condición. Dicho límite esta pensado para que el programa no busque indefinidamente en caso de que no haya más casos que cumplan la precondición sino que lo intente con un número razonable de casos de prueba, si no encuentra 100 tests válidos antes de dicho número entonces el programa simplemente anuncia cuantos tests pudo realizar correctamente.
 
 #####Monitorizando los datos
 Al testear propiedades debemos tener cuidado, pues quizás parezca que hemos probado una propiedad a fondo para estar seguros de su credibilidad pero esta simplemente ser aparente. Voy a intentar ejemplificarlo añadiendo unos cambios a la función anterior **prop_Insert**.
@@ -108,7 +108,7 @@ Si ejecutamos esta nueva función con **Quickcheck** obtenemos el siguiente mens
 ```
 Es decir que el 43% de los tests realizados son sobre una lista vacia.
 
-Pero a su vez **quickcheck** nos ofrece la posibilidad de un mejor análisis, más alla de etiquetar uno de los casos que nos interese. Podemos realizar una especie de histograma, utilizando la palabra reservada **collect**, que nos dará una mayor información de la distribución de los casos de prueba, por ejemplo en este caso según su longitud.
+Pero a su vez **Quickcheck** nos ofrece la posibilidad de un mejor análisis, más alla de etiquetar uno de los casos que nos interese. Podemos realizar una especie de histograma, utilizando la palabra reservada **collect**, que nos dará una mayor información de la distribución de los casos de prueba, por ejemplo en este caso según su longitud.
 ```haskell
   prop_Insert :: Int -> [Int] -> Property
   prop_Insert x xs =
@@ -126,7 +126,7 @@ Al ejecutarlo obtendriamos un resultado como el siguiente.
   2% 4.
   1% 5.
 ```
-Lo cual nos permite observar que de los 100 casos de prueba que cumplían la condición solo 19 de ellos trabajan con listas mayores de tamaño 1, lo cual es uno de los grandes problemas de los generadores por defecto que nos proporciona **quickcheck** y para poder solucionar dicho problema se nos proporciona la posibilidad de definir nuestros propios generadores.
+Lo cual nos permite observar que de los 100 casos de prueba que cumplían la condición solo 19 de ellos trabajan con listas mayores de tamaño 1, lo cual es uno de los grandes problemas de los generadores por defecto que nos proporciona **Quickcheck** y para poder solucionar dicho problema se nos proporciona la posibilidad de definir nuestros propios generadores.
 
 ######Definir generadores
 En primer lugar vamos a empezar definiendo la clase de tipos **Arbitrary** de la cual un tipo es una instancia si podemos generar casos aleatorios de él. La manera de generar los casos de prueba depende por supuesto del tipo.
@@ -164,9 +164,9 @@ Vamos a observar otro ejemplo, un generador para listas de un tipo **a** arbitra
 ```
 En ella usamos la función **frequency** la cual funciona similar a **oneof** pero dandole pesos diferentes a los diferentes casos. En este ejemplo le damos peso 1 a la lista vacia y peso 4 a la lista compuesta de otras 2 listas, con lo cual obtenemos casos de prueba de una longitud media de 4. Teniendo en cuenta el ejemplo anterior visto sobre la inserción en una lista ordenada en la cual la mayoria de los casos de prueba eran de longitud 0 o 1 podemos observar que es interesante definir los generadores manualmente ya que esto produce unos mejores casos de prueba.
 
-### 2.3: Generics
+### 2.3: Librería Generics de GHC
 
-El siguiente punto a tratar en estos preliminares es la librería **Generics** [@generics] de Haskell, una librería utilizada principalmente para la generación automática de instancias de funciones correctas para cualquiera que sea el tipo de datos. En el caso de este proyecto **Generics** apareció como una librería necesaria pues debiamos conseguir escribir funciones como **compose** de manera que funcionaran para cualquier tipo de datos, incluídos los definidos por el usuario y de los cuales no podemos tener conocimiento en adelantado.
+El siguiente punto a tratar en estos preliminares es la librería **Generics** del compilador GHC de Haskell[@generics], una librería utilizada principalmente para la generación automática de instancias de funciones correctas para cualquiera que sea el tipo de datos. En el caso de este proyecto **Generics** apareció como una librería necesaria pues debiamos conseguir escribir funciones como **compose** de manera que funcionaran para cualquier tipo de datos, incluídos los definidos por el usuario y de los cuales no podemos tener conocimiento en adelantado.
 
 Dicha librería dentro de Haskell es posible por dos caracteristicas del propio lenguaje:
 
@@ -732,11 +732,6 @@ Estaba tambien pensado incluir dentro del archivo **Arbitrary.hs** las instancia
 ### 4.1: La interfaz con la UUT
 
 ### 4.2: La obtencion del tipo de la UUT
-
-```haskell
-
-```
-
 ```haskell
   ----------------Get types for the input params------------------------------
   get_f_inp_types :: String -> Q [String]
