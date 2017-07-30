@@ -21,7 +21,7 @@ Esquema del proyecto CAVI-ART(Fig 1)
 
 ![Esquema del proyecto CAVI-ART](imagenes/caviart.jpg "Esquema del proyecto CAVI-ART")
 
-\\
+\pagebreak
 
 ### 2.2: QuickCheck
 
@@ -267,33 +267,21 @@ Las posibles maneras en las que el usuario puede especificar que se generen los 
 
 ### 3.2: Sized
 
-En la estructura del proyecto **Sized** está pensada como la clase externa que hereda de **Allv**. A su vez es la clase que se ocupa de a partir de la lista **allv** de un tipo de datos devolver la lista de los casos de prueba. Esto se realiza mediante dos funciones:
-  - **sized** que devuelve los *n* primeros casos menores o iguales a un tamaño *m*.
-  - **smallest** que devuelve  los *n* primeros casos de la lista **allv** según su posición y sin importar su tamaño.
+En la estructura del proyecto **\texttt{Sized}** está pensada como la clase externa que hereda de **\texttt{Allv}**. A su vez es la clase que se ocupa de a partir de la lista **\texttt{allv}** de un tipo de datos devolver la lista de los casos de prueba. Esto se realiza mediante dos funciones:
+  - **\texttt{sized}** que devuelve los **\texttt{n}** primeros casos menores o iguales a un tamaño *m*.
+  - **\texttt{smallest}** que devuelve  los **\texttt{n}** primeros casos de la lista **allv** según su posición y sin importar su tamaño.
 
-En esta clase del proyecto decidimos implementar el concepto de tamaño de un elemento mediante la librería **Generics** explicada anteriormente pues de esa manera podríamos tener una representación del tamaño independiente del tipo y no hay que definirlo para cada tipo nuevo creado por el usuario.
+En esta clase del proyecto decidimos implementar el concepto de tamaño de un elemento mediante la librería **Generics** explicada anteriormente pues de esa manera podríamos tener una representación del tamaño independiente del tipo y no hay que definirlo para cada tipo nuevo creado por el usuario. (Fig 2)
 
 En primer lugar debemos definir la clase externa de la parte de **Generics** que será la que nosotros usemos. En ella solo debemos definir las funciones que queremos que tenga y como se comunica con la clases internas de **Generics**. Primero definimos la funcion en si que será una lista que dada un elemento de un tipo cualquiera nos devuelva un entero que representará su tamaño.
 
-Despues debemos definir como se comunica la función **size** externa con la versión genérica **gsize** para obtener de esta el valor a devolver. En este caso usamos la función **from** que lo que hace es transformar un valor en su representación no genérica y transformarlo a su representación genérica para que pueda ser manipulado en las diferentes funciones. En este caso es simple pues el valor del tamaño obtenido por **gsize** será el mismo devuelto por nuestra función **size**
+Despues debemos definir como se comunica la función **\texttt{size}** externa con la versión genérica **gsize** para obtener de esta el valor a devolver. En este caso usamos la función **from** que lo que hace es transformar un valor en su representación no genérica y transformarlo a su representación genérica para que pueda ser manipulado en las diferentes funciones. En este caso es simple pues el valor del tamaño obtenido por **gsize** será el mismo devuelto por nuestra función **size**. Finalmente creamos la clase interna **\texttt{GSized}** y definimos la función **\texttt{gsize}**.
 
-En primer lugar creamos la clase interna **GSized** y definimos la función **gsize**
-
-En el caso base, un constructor sin argumentos el tamaño devuelto por **gsize** es 0.
-
-En cambio cuando se trata de un tipo compuesto por otros dos tipos, el tamaño del tipo es la suma de los tamaños de los tipos que los componen.
-
-En esta tercera instancia definimos el comportamiento cuando el tipo tiene mas de un constructor posible. En este caso si elegimos el constructor de la derecha el tamaño del tipo será el tamaño del tipo de la derecha y similar si elegimos el tipo de la izquierda.
-
-Podemos observar que la función sólo está definida para el caso en el que tenemos exactamente dos constructores diferentes pero esto es debido a que el operador asocia de dos en dos. Por ejemplo si tuvieramos un tipo defindo:
-
-se aplicaría primero sobre los constructores **Const** y **Prod**, despues sobre **Var** y **Sum** y finalmente sobre los resultados de cada pareja.
-
-Por último tenemos la instancia utilizada para trabajar con metainformación del tipo. En el caso de **gsize** al no ser necesaria dicha información simplemente llamamos de nuevo a la funcion **gsize** ignorandola.
+Una vez tenemos la interfaz entre las dos clases **\texttt{Sized}** y **\texttt{GSized}** lo primero que debemos definir es el constructor sin argumentos que en nuestro caso devuelve el tamaño 0. A continuacion definimos**\texttt{size}** para un tipo compuesto por otros dos tipos, el tamaño de dicho tipo es la suma de los tamaños de los tipos que los componen. Tras ello definimos el comportamiento cuando el tipo tiene mas de un constructor posible, en este caso si elegimos el constructor de la derecha el tamaño del tipo será el tamaño del tipo de la derecha y similar si elegimos el tipo de la izquierda. Por último tenemos la instancia utilizada para trabajar con metainformación del tipo, que en nuestro caso al no ser necesaria dicha información simplemente llamamos de nuevo a la funcion **gsize** ignorando la metainformación.
 
 ![Clase Sized](imagenes/Sized.jpg "Clase Sized")
 
-\\
+\pagebreak
 
 ### 3.3: Allv/TemplateAllv
 
@@ -309,7 +297,7 @@ Para realizar la composición de dos listas seguimos el método mostrado en la s
 Dadas dos listas la idea es realizar el producto cartesiano de ellas siendo este el resultado de generar todas las parejas con un valor de la primera lista y otro de la segunda. Teniendo en cuenta que ambas pueden ser infinitas, dicho producto deberá ser realizado por diagonales.
 Dicha combinación de listas infinitas podía ser realizada sin problemas usando **Generics** pero el problema llegaba a la hora de querer devolver los *n* primeros valores de un tamaño menor o igual a *m* ya que para ello debíamos ordenar la lista infinita y encontramos el problema de que en dichas listas infinitas los elementos de un tamaño siempre eran infinitos y que siempre habría algun elemento a mayores de tamaño menor o igual a *m* aunque fuera despues de muchos elementos por el medio que no lo fueran. Dicho problema fue el por que tuvimos que pensar en utilizar **Template Haskell** en lugar de **Generics**.
 
-En la versión definitiva del programa en la clase **TemplateAllv** se encuentra esta funcionalidad de crear una instancia de **Allv** para los tipos de datos definidos por el usuario utilizando para ello **TemplateAllv**, con la ayuda de la ya nombrada funciónn **compose** que tiene la siguiente forma.
+En la versión definitiva del programa en la clase **TemplateAllv** se encuentra esta funcionalidad de crear una instancia de **Allv** para los tipos de datos definidos por el usuario utilizando para ello **TemplateAllv**, con la ayuda de la ya nombrada funciónn **compose**(Fig 4) que tiene la siguiente forma.
 
 **Compose** se encarga de concatenar todas las diagonales en una única lista final que es la que se devuelve mediante la función **allv**, por otro lado **diags** se encarga de crear una de las diagonales y mientras no sea la ultima diagonal volver a llamarse a si misma con los parametros para la siguiente. Los parámetros de la función **diags** son:
   - **i** se trata del ordinal de la diagonal que vamos a generar.
@@ -317,7 +305,7 @@ En la versión definitiva del programa en la clase **TemplateAllv** se encuentra
 
 Además dentro de **\texttt{TemplateAllv}** tres funciones se encargan de crear una instancia adecuada de la clase **\texttt{Allv}** adecuada para cada uno de los tipos de datos definidos por el usuario.
 
-La primera de ellas y la más externa en dicho proceso es **gen_allv**, la cual además de llamar a **typeInfo** para extraer la información del tipo y pasarsela a las subfunciones también es donde se define como se formará exactamente la nueva función **allv** dentro de la instancia del tipo. Adjunto el código de la función **gen_allv**. 
+La primera de ellas y la más externa en dicho proceso es **gen_allv**(Fig 3), la cual además de llamar a **typeInfo** para extraer la información del tipo y pasarsela a las subfunciones también es donde se define como se formará exactamente la nueva función **allv** dentro de la instancia del tipo. Adjunto el código de la función **gen_allv**. 
 
 Vamos a echar un vistazo mas de cerca a dicha función **gen_body** dentro de la clausula **where** y al tipo de comprobaciones o analisis sobre el tipo que realiza. En primer lugar nombrar lo que significa cada una de las cuatro listas que recibe como parámetro dicha función:
   - La primera de ellas contiene los números de parámetros de cada uno de los diferentes constructores.
@@ -326,10 +314,10 @@ Vamos a echar un vistazo mas de cerca a dicha función **gen_body** dentro de la
 **Gen_body** se encarga de analizar el número de parámetros de cada uno de los constructores ya que si cuenta con un único parámetro, se puede utilizar el nombre del propio constructor sin ningún problema pero en caso de tener más de un parámetro debido a que compose devuelve la lista compuesta como una lista de tuplas, es necesario utilizar una función auxiliar **f** para realizar la aplicación del constructor sobre los elementos de la tupla en lugar de sobre la tupla en si.
 Aparte de esto **gen_body** se encarga de utilizando **Template Haskell** conseguir juntar todas las partes que fueron en parte preprocesadas en **gen_clause**
 
-La siguiente función a tratar, **gen_instance** se encarga únicamente de crear una instancia de la clase **Allv** para el nuevo tipo de datos (parámetro **for_type**) y adjuntar a dicha instancia la definición de la función **allv** que se crea en **gen_clause**. Adjunto el código de **gen_instance**
+La siguiente función a tratar, **gen_instance**(Fig 5) se encarga únicamente de crear una instancia de la clase **Allv** para el nuevo tipo de datos (parámetro **for_type**) y adjuntar a dicha instancia la definición de la función **allv** que se crea en **gen_clause**. Adjunto el código de **gen_instance**
 
 
-Por último tenemos la función **gen_clause** que se encarga de crear la definición de la función **allv** para el tipo de datos, usando para ello la función **gen_body** que había sido definida anteriormente en **gen_allv**.
+Por último tenemos la función **gen_clause**(Fig 6) que se encarga de crear la definición de la función **allv** para el tipo de datos, usando para ello la función **gen_body** que había sido definida anteriormente en **gen_allv**.
 Además cuenta con una serie de funciones auxiliares que realizan parte del procesamiento:
   - **listOfFOut** se encarga de crear la lista de nombres de variables entre **f~1~** y **f~n~** para aquellos casos en los cuales los constructores tienen más de un parámetro.
   - **isRec** devuelve una lista de booleanos en la cual cada posición indica si el constructor en dicha posición es recursivo o no.
@@ -346,7 +334,7 @@ Además cuenta con una serie de funciones auxiliares que realizan parte del proc
 
 ![Función gen_clause](imagenes/genClause.jpg "Función gen_clause")
 
-\\
+\pagebreak
 
 ### 3.4: Arbitrary
 
@@ -522,10 +510,7 @@ En el código a continuación muestro tanto el código para la función **typeIn
            []          -> mkName s
            _:[]        -> mkName s
            _:t         -> mkName t
-   
-  eliminateMaybe :: Maybe a -> a
-  eliminateMaybe (Just a) = a
-   
+
   simplifyParsing :: String -> String
   simplifyParsing string = fst (auxiliarParse string)
    
@@ -569,7 +554,7 @@ En el código a continuación muestro tanto el código para la función **typeIn
 
 \pagebreak
 
-# 5..Experimentos
+# 5.Experimentos
 
 \pagebreak
 
@@ -588,15 +573,11 @@ Lo primero que hace **Korat** es reservar el espacio necesario para los objetos 
 Cada uno de los posibles candidatos que considere **Korat** a partir de ese momento será una evaluación de esos 8 campos. Por lo tanto el espacio de estados de búsqueda del input consiste en todas las posibles combinaciones de esos campos, donde cada uno de ellos toma valores de su dominio definido en **finitialization**
 
 
-Para conseguir explorar de manera sistemática y completa el espacio de estados **Korat** ordena todos los elementos en los dominios de las clases y los dominios de los campos. Dicho orden de cada uno de los dominios de los campos será consistente con el orden del dominio de la clase y todos los valores que pertenezcan al mismo dominio de clase ocurriran de manera consecutiva en el dominio del campo.
-
-Cada uno de los candidatos de la entrada es un vector de índices de su correspondiente dominio del campo. Teniendo en cuenta que el dominio de la clase **\texttt{Nodo}** en el anterior ejemplo cuenta con 3 elementos \texttt{[N0,N1,N2]} a estos debemos añadir \texttt{null} obteniendo así un dominio de campo \texttt{[null, N0, N1, N2]} que será el dominio de los campos **\texttt{raiz}** e **hijos derecho e izquierdo** de cada uno de los nodos. El dominio del campo **\texttt{tamaño}** será un único entero, 3.
+Para conseguir explorar de manera sistemática y completa el espacio de estados **Korat** ordena todos los elementos en los dominios de las clases y los dominios de los campos. Dicho orden de cada uno de los dominios de los campos será consistente con el orden del dominio de la clase y todos los valores que pertenezcan al mismo dominio de clase ocurriran de manera consecutiva en el dominio del campo. Tras esto representa cada candidato de la entrada como un vector de índices de sus correspondientes dominios de campos.
 
 Tras definir los dominios de cada uno de los campos del vector la busqueda comienza con la inicialización de todos los indices del vector a 0. Tras ello para cada posible candidato fijamos los valores de los campos de acuerdo a los valores en el vector y acto seguido invoca a la funcion **repOk** que es donde el usuario ha definido la precondición de la función. Durante dicha ejecución **Korat** monitoriza en que orden son accedidos los campos del vector y construye una lista con los identificadores de los campos, ordenados por la primera vez en que **repOk** los accede.
 
-Cuando **repOk** retorna **Korat** genera el siguiente candidato incrementando el indice del dominio de campo para el campo que se encuentra último en la lista ordenada construida previamente. Si dicho indice es mayor que el tamaño del dominio de su campo este se pone a cero y se incrementa el indice de la posición anterior y así repetidamente.
-
-Al seguir este método para generar el siguiente candidato conseguiremos podar un gran numero de los candidatos que tienen la misma evaluación parcial. Asimismo podemos estar seguros de que dicha poda no deja fuera ninguna estructura de datos válida porque **repOk** no leyó dichos campos y podría haber devuelto falso independientemente de su valor. Gracias a esta poda de una gran parte del espacio de busqueda **Korat** puede explorar espacios de busqueda muy grandes de manera eficiente, dicha eficiencia de la poda depende del método **repOk** por ejemplo si siempre lee todos los datos de entrada antes de terminar la ejecución forzará a Korat a explorar casi todo el espacio de busqueda sin apenas podas. 
+Cuando **repOk** retorna **Korat** genera el siguiente candidato incrementando el indice del dominio de campo para el campo que se encuentra último en la lista ordenada construida previamente. Si dicho indice es mayor que el tamaño del dominio de su campo este se pone a cero y se incrementa el indice de la posición anterior y así repetidamente. Al seguir este método para generar el siguiente candidato conseguiremos podar un gran numero de los candidatos que tienen la misma evaluación parcial sin dejar fuera ninguno válido.
 
 El algoritmo de busqueda descrito aquí genera las entradas en orden lexicográfico. Además para los casos en los que **repOk** no es determinista este método garantiza que todos los candidatos para los que **repOk** devuelve true son generados, los casos para los que siempre devuelve false nunca son generados y los casos para los que alguna vez se devuelve true y a veces false pueden ser o no generados.
 
