@@ -397,8 +397,32 @@ Estaba tambien pensado incluir dentro del archivo **Arbitrary.hs** las instancia
 # 4. El generador de casos
 
 ### 4.1: La interfaz con la UUT
+La interfaz de mi programa con la unidad bajo testeo (UUT a partir de ahora) se encuentra en el archivo UUT.hs, dicho archivo es diferente para cada función que vayamos a probar y contiene la información mínima necesaria para poder hacer todas las pruebas. Ademas dicho archivo se genera automáticamente para cada función que vayamos a probar mediante la IR2Haskell, que se encarga de traducir la representacion de la IR a codigo Haskell.
+La información presente en la UUT es:
+- En primer lugar una función uutNargs que devuelve un entero y que indica el número de argumentos que tiene la función que vamos a probar.
+- En segundo lugar **\texttt{uutMethods}** que contiene los nombres de las tres funciones que tendremos que utilizar en el proceso ( precondicion, funcion y postcondicion).
+-A continuacion la precondicion en este caso **\texttt{uutPrec}**, la funcion **\texttt{uutMethod}** y postcondicion **\texttt{uutPost}**. Estas tres funciones serán las que guien todo el proceso de prueba de la función para la lista de casos generados.
 
+```haskell
+  module UUT where
+
+  uutNargs ::Int
+  uutNargs = 2
+
+  uutMethods :: [String]
+  uutMethods = ["uutPrec", "uutMethod", "uutPost"]
+
+  uutPrec :: Int -> Int -> Bool
+  uutPrec x y = True
+
+  uutMethod :: Int -> Int -> Int
+  uutMethod x y = x+y
+
+  uutPost :: Int -> Int -> Int -> Bool
+  uutPost x y z = True
+```
 ### 4.2: La obtencion del tipo de la UUT
+Dentro del programa, una de las partes importantes y la principal por la cual Template Haskell resultó de gran utilidad para el proyecto es poder analizar los tipos de las funciones y adaptar el generador de casos a ellos, tanto si son tipos predefinidos, como si son tipos definidos por el usuario.
 
 Dentro de **\texttt{TemplateAllv}** se encuentra la funcion  **typeInfo**  que se encarga de extraer y sintetizar la información sobre un tipo declarado por el usuario. Se trata de una función que recibe como parametro una variable del tipo **DecQ** y devuelve una tupla dentro de la monada **Q** con la siguiente información:
   - En primer lugar el nombre simplificado del tipo del cual vamos a realizar la instancia, refiriendome con simplificado a quitar toda la parte del nombre que se refiere a la estructura de módulos de la cual se hereda dicho tipo. Por ejemplo si crearamos una instacia para el tipo **Integer** del módulo **Prelude** el nombre del tipo sin simplificar sería **Prelude.Integer** y una vez simplificado simplemente **Integer**. Dicho nombre se trata de una variable de tipo **Name**, que es la manera en la que se maneja el tipo **String** en **TH** para todo tipo de nombres.
@@ -459,8 +483,12 @@ En el código a continuación muestro tanto el código para la función **typeIn
           _:t         -> mkName t
 ```
 
-
-
+El otro gran punto en el cual necesitamos analizar el tipo de las funciones es a la hora de crear los casos de prueba, y de ello se encarga la función **\texttt{get_f_inp_types}** la cual que dada una **\texttt{String}** que será el nombre de una función nos devuelve una lista con los tipos de entrada de dicha funcion en forma de lista de **\texttt{Strings}**.
+Esta funcion consta de 4 pasos o llamadas a otras funciones:
+  - En primer lookupValueName, que es una funcion de la libreria **\texttt{Template Haskell}** y que lo que hace es dado una String que será el nombre de una funcion nos devuelve el Name asociado a ella dentro del namespace actual.
+  - La segunda función se trata de extract_info, la cual recibe como entrada un InfoQ el cual es un tipo que se usa dentro de Template Haskell para encapsular información como por ejemplo en este caso la información devuelta por el reify del Name de la función. A partir de ello extract_info nos devolvera el nombre de la funcion sin el prefijo del modulo, el nombre de la función con el prefijo y por último el tipo de la función en forma prefija.
+  - En tercer lugar simplifyParsing que recibe como entrada el tipo de una función en forma prefija y lo transforma a forma infija, que es la manera en el que indicamos por ejemplo en tipo de la función cuando lo ponemos explícitamente en Haskell.
+  - Finalmente la ultima función extract_types se encarga de transformar el tipo de la función en forma infija a una lista con los tipos de entrada de la misma, ignorando el tipo de salida.
 
 
 ```haskell
