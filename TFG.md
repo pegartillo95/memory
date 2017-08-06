@@ -397,184 +397,52 @@ Estaba tambien pensado incluir dentro del archivo **Arbitrary.hs** las instancia
 # 4. El generador de casos
 
 ### 4.1: La interfaz con la UUT
-La interfaz de mi programa con la unidad bajo testeo (UUT a partir de ahora) se encuentra en el archivo UUT.hs, dicho archivo es diferente para cada función que vayamos a probar y contiene la información mínima necesaria para poder hacer todas las pruebas. Ademas dicho archivo se genera automáticamente para cada función que vayamos a probar mediante la IR2Haskell, que se encarga de traducir la representacion de la IR a codigo Haskell.
+La interfaz de mi programa con la unidad bajo testeo (UUT a partir de ahora) se encuentra en el archivo UUT.hs(Figura x), dicho archivo es diferente para cada función que vayamos a probar y contiene la información mínima necesaria para poder hacer todas las pruebas. Ademas dicho archivo se genera automáticamente para cada función que vayamos a probar mediante la IR2Haskell, que se encarga de traducir la representacion de la IR a codigo Haskell.
 La información presente en la UUT es:
 - En primer lugar una función uutNargs que devuelve un entero y que indica el número de argumentos que tiene la función que vamos a probar.
 - En segundo lugar **\texttt{uutMethods}** que contiene los nombres de las tres funciones que tendremos que utilizar en el proceso ( precondicion, funcion y postcondicion).
 -A continuacion la precondicion en este caso **\texttt{uutPrec}**, la funcion **\texttt{uutMethod}** y postcondicion **\texttt{uutPost}**. Estas tres funciones serán las que guien todo el proceso de prueba de la función para la lista de casos generados.
 
-```haskell
-  module UUT where
+![Clase UUT](imagenes/UUT.jpg "Clase UUT")
 
-  uutNargs ::Int
-  uutNargs = 2
-
-  uutMethods :: [String]
-  uutMethods = ["uutPrec", "uutMethod", "uutPost"]
-
-  uutPrec :: Int -> Int -> Bool
-  uutPrec x y = True
-
-  uutMethod :: Int -> Int -> Int
-  uutMethod x y = x+y
-
-  uutPost :: Int -> Int -> Int -> Bool
-  uutPost x y z = True
-```
 ### 4.2: La obtencion del tipo de la UUT
 Dentro del programa, una de las partes importantes y la principal por la cual Template Haskell resultó de gran utilidad para el proyecto es poder analizar los tipos de las funciones y adaptar el generador de casos a ellos, tanto si son tipos predefinidos, como si son tipos definidos por el usuario.
 
-Dentro de **\texttt{TemplateAllv}** se encuentra la funcion  **typeInfo**  que se encarga de extraer y sintetizar la información sobre un tipo declarado por el usuario. Se trata de una función que recibe como parametro una variable del tipo **DecQ** y devuelve una tupla dentro de la monada **Q** con la siguiente información:
+Dentro de **\texttt{TemplateAllv}** se encuentra la funcion  **\texttt{typeInfo}** (Figura x)  que se encarga de extraer y sintetizar la información sobre un tipo declarado por el usuario. Se trata de una función que recibe como parametro una variable del tipo **DecQ** y devuelve una tupla dentro de la monada **Q** con la siguiente información:
   - En primer lugar el nombre simplificado del tipo del cual vamos a realizar la instancia, refiriendome con simplificado a quitar toda la parte del nombre que se refiere a la estructura de módulos de la cual se hereda dicho tipo. Por ejemplo si crearamos una instacia para el tipo **Integer** del módulo **Prelude** el nombre del tipo sin simplificar sería **Prelude.Integer** y una vez simplificado simplemente **Integer**. Dicho nombre se trata de una variable de tipo **Name**, que es la manera en la que se maneja el tipo **String** en **TH** para todo tipo de nombres.
   - El segundo se trata del nombre del tipo sin simplificar, devuelto tambien como una variable de tipo **Name**.
   - El tercero es una lista de enteros para cada uno de los diferentes constructores del tipo. Los enteros expresan el número de argumentos de cada uno de uno de los constructores.
   - El cuarto se trata de una lista de los diferentes nombres de los constructores de tipo. Se trata de una lista de tipo **Name**
   - El último se trata de una lista de listas. Cada una de las listas internas contiene los tipos para uno de los constructores del tipo.
 
-En el código a continuación muestro tanto el código para la función **typeInfo** como para la funcion **simpleName** que es la encargada de simplificar el nombre de la función.
-
-
-```haskell
-  typeInfo :: DecQ -> Q (Name, Name,[Int],[Name],[[Type]])
-  typeInfo m =
-       do d <- m
-          case d of
-             d@(DataD _ _ _ _ _) ->
-              return $ (simpleName $ name d, name d , consA d, termsA d, listTypesA d)
-             d@(NewtypeD _ _ _ _ _) ->
-              return $ (simpleName $ name d, name d , consA d, termsA d, listTypesA d)
-             _ -> error ("derive: not a data type declaration: " ++ show d)
-   
-       where
-          consA (DataD _ _ _ cs _)    = map conA cs
-          consA (NewtypeD _ _ _ c _)  = [ conA c ]
-
-          conA (NormalC c xs)         = length xs
-          conA (RecC c xs)            = length xs
-          conA (InfixC _ c _)         = 2
-   
-          nameFromTyVar (PlainTV a)    = a
-          nameFromTyVar (KindedTV a _) = a
-   
-          termsA (DataD _ _ _ cs _)   = map termA cs
-          termsA (NewtypeD _ _ _ c _) = [ termA c ]
-   
-          termA (NormalC c xs)      = c
-          termA (RecC c xs)         = c
-          termA (InfixC t1 c t2)    = c
-   
-          name (DataD _ n _ _ _)      = n
-          name (NewtypeD _ n _ _ _)   = n
-          name d                      = error $ show d
-
-          listTypesA (DataD _ _ _ cs _)    = (map typesA cs)
-          listTypesA (NewtypeD _ _ _ c _)  = [ typesA c ]
-
-          typesA (NormalC _ xs)         = map snd xs
-          typesA (RecC _ xs)            = map (\(_, _, t) -> t) xs
-          typesA (InfixC t1 _ t2)       = [snd t1] ++  [snd t2]
-   
-  simpleName :: Name -> Name
-  simpleName nm =
-     let s = nameBase nm
-     in case dropWhile (/=':') s of
-          []          -> mkName s
-          _:[]        -> mkName s
-          _:t         -> mkName t
-```
 
 El otro gran punto en el cual necesitamos analizar el tipo de las funciones es a la hora de crear los casos de prueba, y de ello se encarga la función **\texttt{get_f_inp_types}** la cual que dada una **\texttt{String}** que será el nombre de una función nos devuelve una lista con los tipos de entrada de dicha funcion en forma de lista de **\texttt{Strings}**.
-Esta funcion consta de 4 pasos o llamadas a otras funciones:
+Esta funcion consta de 4 pasos o llamadas a otras funciones auxiliares(Figuras x y x+1):
   - En primer lookupValueName, que es una funcion de la libreria **\texttt{Template Haskell}** y que lo que hace es dado una String que será el nombre de una funcion nos devuelve el Name asociado a ella dentro del namespace actual.
   - La segunda función se trata de extract_info, la cual recibe como entrada un InfoQ el cual es un tipo que se usa dentro de Template Haskell para encapsular información como por ejemplo en este caso la información devuelta por el reify del Name de la función. A partir de ello extract_info nos devolvera el nombre de la funcion sin el prefijo del modulo, el nombre de la función con el prefijo y por último el tipo de la función en forma prefija.
   - En tercer lugar simplifyParsing que recibe como entrada el tipo de una función en forma prefija y lo transforma a forma infija, que es la manera en el que indicamos por ejemplo en tipo de la función cuando lo ponemos explícitamente en Haskell.
   - Finalmente la ultima función extract_types se encarga de transformar el tipo de la función en forma infija a una lista con los tipos de entrada de la misma, ignorando el tipo de salida.
 
+![Función typeInfo](imagenes/typeInfo.jpg "Función typeInfo")
 
-```haskell
-  ----------------Get types for the input params------------------------------
-  get_f_inp_types :: String -> Q [String]
-  get_f_inp_types str = do (Just name) <- lookupValueName str
-                           (_,_,text) <- extract_info (reify name)
-                           t <- return(simplifyParsing text)
-                           return (extract_types t [] "")
-   
-   
-   --------Auxiliar functions for get_f_inp_types ------------------------------
-   
-  extract_info :: InfoQ -> Q(Name, Name, String)
-  extract_info m =
-        do d <- m
-           case d of
-              d@(VarI _ _ _ _) ->
-               return $ (funcName d, simpleName $ funcName d, parseDataTypes d)
-              d@(ClassOpI _ _ _ _) ->
-               return $ (funcName d, simpleName $ funcName d, parseDataTypes d)
-              _ -> error ("Error in extract_info" ++ show d)
-        where
-           funcName (VarI n _ _ _)  = n
-           funcName (ClassOpI n _ _ _) = n
-   
-           parseDataTypes (VarI _ x _ _) = first_parse x
-           parseDataTypes (ClassOpI _ x _ _) = first_parse x
-   
-           first_parse ((ForallT _ _ x)) = parsing x
-           first_parse x = parsing x
-    
-           parsing ((AppT x y)) = (parsing x) ++ (parsing y)
-           parsing (ArrowT) = "-> "
-           parsing (ListT) = "[] "
-           parsing ((TupleT 2)) = "(,) "
-           parsing ((TupleT 3)) = "(,,) "
-           parsing ((VarT _)) = "Int "
-           parsing ((ConT x)) = (nameBase x) ++ " "
-           parsing _ = "UND "
-   
-   
-  simpleName :: Name -> Name
-  simpleName nm =
-      let s = nameBase nm
-      in case dropWhile (/=':') s of
-           []          -> mkName s
-           _:[]        -> mkName s
-           _:t         -> mkName t
+![Funcion get_f_inp_types y auxiliares](imagenes/getFInpTypes1.jpg "Funcion get_f_inp_types y auxiliares")
 
-  simplifyParsing :: String -> String
-  simplifyParsing string = fst (auxiliarParse string)
-   
-  auxiliarParse s
-       | startswith "->" (lstrip s) = ( (fst call2) ++ " -> " ++ (fst (call 0 (snd call2))) , snd (call 0 (snd call2)))
-       | startswith "[]" (lstrip s) = ("[" ++ (fst call2) ++ "]", snd call2)
-       | startswith "(,)" (lstrip s) = ("(" ++ (fst call3) ++ "," ++ (fst (call 0 (snd call3))) ++ ")" , snd (call 0 (snd call3)))
-       | startswith "(,,)" (lstrip s) = ("(" ++ (fst call4) ++ "," ++ (fst (call 0 (snd call4))) ++ "," ++ (fst (call 0 (snd (call 0 (snd call4))))) ++ ")" , snd (call 0 (snd (call 0 (snd call4)))))
-       | startswith "(,,,)" (lstrip s) = ("(" ++ (fst call5) ++ "," ++ (fst (call 0 (snd call5))) ++ "," ++ (fst (call 0 (snd (call 0 (snd call5))))) ++ "," ++ (fst (call 0 (snd (call 0 (snd (call 0 (snd call5))))))) ++ ")" , snd (call 0 (snd (call 0 (snd (call 0 (snd call5)))))) )
-       | otherwise = baseVar (lstrip s) ""
-   
-   
-   
-       where call2 = call 2 s
-             call3 = call 3 s
-             call4 = call 4 s
-             call5 = call 5 s
-             call n string = auxiliarParse (stringSkip n (lstrip string))
-             stringSkip n (x:xs)
-                | n == 0 = (x:xs)
-                | otherwise = stringSkip (n-1) xs
-             baseVar s formedS
-                | (head s) /= ' '  = baseVar (tail s) (formedS ++ [head s])
-                | otherwise = (formedS , (lstrip (tail s)))
+![Funcion get_f_inp_types y auxiliares](imagenes/getFInpTypes.jpg "Funcion get_f_inp_types y auxiliares")
 
-   -------------Extracts the input types from the simplify parsing----------
-   
-  extract_types :: String -> [String] -> String -> [String]
-  extract_types [] list _ = list
-  extract_types (x1:xs) list building_t
-        | (x1 == ' ') || (x1 == '>') = extract_types xs list building_t
-        | (x1 == '-')= extract_types xs (list++[building_t]) ""
-        | otherwise = extract_types xs list (building_t++[x1])
-```
 
-### 4.3 La generación de instancias de Allv, Sized, Arbitrary
+### 4.3 La generación de instancias de Allv y Arbitrary
+Tras obtener la lista de tipos de datos que se utilizan en la función que no estan definidos por defecto (lo cual corresponde con la segunda parte del apartado anterior) deberemos crear instancias en las dos clases **\texttt{Allv}** y **\texttt{Arbitrary}** para dichos tipos. Dicha generación de instancias se realiza mediante **\texttt{Template Haskell}** dentro de la clase **\texttt{UUTReader}**
+mediante el codigo mostrado en la Figura x.
+
+En dicho código realizamos una llamada a las funciones **\texttt{gen_allv_str_list}** y **\texttt{gen_arbitrary_str_listQ}** de las clases **\texttt{TemplateAllv}** y **\texttt{TemplateArbitrary}** respectivamente. Ambas funciones reciben como párametro una lista de Strings que contiene todos los nombres de los tipos definidos por el usuario y a partir de ella crean instancias para cada uno de dichos tipos en la clase a la que esta dirigida cada función.
+
+Dicha lista de tipos definidos por el usuario se calcula en primer lugar hayando los tipos de los datos de la precondición y despues sobre dicha lista de tipos de entrada aplicando la función **\texttt{notDefTypesQMonad}** la cual filtra cuales de ellos no son instancias predefinidas.(Figura x).
+
+Analizando dicha función y sus auxiliares podemos observar que se tratan de una funciones relativamente simples, ya que **\texttt{notDefTypesQMonad}** se encarga de simplemente de lidiar con la monada Q y pasar la lista fuera de la monada a **\texttt{notDefTypes}**. En segundo lugar **\texttt{notDefTypes}** se encarga de pasarle dichos tipos uno a uno a **\texttt{isUserDef}**, pero se los pasa simplificados, lo cual significa tratar igual las listas de un tipo que el tipo en si, ya que si las instancias para un tipo están definidas en las instancias base tambien lo estarán para las listas de dicho tipo. Por último **\texttt{isUserDef}** simplemente se encarga de ver si el tipo simplificado es o no **\texttt{Int}**, **\texttt{Char}**, o **\texttt{Bool}** que son los tres tipos que cuentan con instancia predefinida y si no es ninguno de ellos devolverá **\texttt{True}**, ya que se trata de un tipo definido por el usuario.
+
+![Call to the generator functions](imagenes/gens.jpg "Call to the generator functions")
+
+![Función notDefTypesQMonad y auxiliares](imagenes/notDefTypes_andAuxs.jpg "Función notDefTypesQMonad y auxiliares")
 
 ### 4.4: La generación de casos
 
