@@ -22,7 +22,7 @@ Un aspecto clave de la plataforma es su Representación Intermedia de los progra
 
 El diseño de la IR fue realizado con la intencion de facilitar las tareas nombradas con anterioridad tanto como fuera posible. Un diseño simple que cuenta con muy pocas construcciones primitivas. Nunca se pensó en la IR como código ejecutable sino como una sintaxis abstracta sobre la cual resultaria fácil realizar análisis estático y verificación formal. Pero en los últimos meses se decidió convertir la IR en código ejecutable, sobre la cual sería posible ejecutar pruebas independientes del lenguaje, y construir herramientas de testeo independientes del lenguaje. La mayoría del trabajo hecho en este campo y la mayoría de las herramientas de testeo existentes están ligadas a un lenguaje en concreto. 
 
-Dicho trabajo de traducir la IR a Haskell y hacer ejecutables los asertos se engloba dentro del trabajo de fin de grado de (nombre)
+Dicho trabajo de traducir la IR a Haskell y hacer ejecutables los asertos se engloba dentro del trabajo de fin de grado de Marta Aracil Muñoz con título **Implementación de asertos ejecutables para una plataforma de verificación**.
 
 Esquema del proyecto CAVI-ART(Fig 1)
 
@@ -423,7 +423,7 @@ Dentro de **\texttt{TemplateAllv}** se encuentra la funcion  **\texttt{typeInfo}
   - El último se trata de una lista de listas. Cada una de las listas internas contiene los tipos para uno de los constructores del tipo.
 
 
-El otro gran punto en el cual necesitamos analizar el tipo de las funciones es a la hora de crear los casos de prueba, y de ello se encarga la función **\texttt{get_f_inp_types}** la cual que dada una **\texttt{String}** que será el nombre de una función nos devuelve una lista con los tipos de entrada de dicha funcion en forma de lista de **\texttt{Strings}**.
+El otro gran punto en el cual necesitamos analizar el tipo de las funciones es a la hora de crear los casos de prueba, y de ello se encarga la función **\texttt{get\_f\_inp\_types}** la cual que dada una **\texttt{String}** que será el nombre de una función nos devuelve una lista con los tipos de entrada de dicha funcion en forma de lista de **\texttt{Strings}**.
 Esta funcion consta de 4 pasos o llamadas a otras funciones auxiliares(Figuras x y x+1):
   - En primer lookupValueName, que es una funcion de la libreria **\texttt{Template Haskell}** y que lo que hace es dado una String que será el nombre de una funcion nos devuelve el Name asociado a ella dentro del namespace actual.
   - La segunda función se trata de extract_info, la cual recibe como entrada un InfoQ el cual es un tipo que se usa dentro de Template Haskell para encapsular información como por ejemplo en este caso la información devuelta por el reify del Name de la función. A partir de ello extract_info nos devolvera el nombre de la funcion sin el prefijo del modulo, el nombre de la función con el prefijo y por último el tipo de la función en forma prefija.
@@ -434,14 +434,14 @@ Esta funcion consta de 4 pasos o llamadas a otras funciones auxiliares(Figuras x
 
 ![Funcion get_f_inp_types y auxiliares](imagenes/getFInpTypes1.jpg "Funcion get_f_inp_types y auxiliares")
 
-![Funcion get_f_inp_types y auxiliares](imagenes/getFInpTypes.jpg "Funcion get_f_inp_types y auxiliares")
+![Funcion get_f_inp_types y auxiliares cont](imagenes/getFInpTypes2.jpg "Funcion get_f_inp_types y auxiliares cont")
 
 
 ### 4.3 La generación de instancias de Allv y Arbitrary
 Tras obtener la lista de tipos de datos que se utilizan en la función que no estan definidos por defecto (lo cual corresponde con la segunda parte del apartado anterior) deberemos crear instancias en las dos clases **\texttt{Allv}** y **\texttt{Arbitrary}** para dichos tipos. Dicha generación de instancias se realiza mediante **\texttt{Template Haskell}** dentro de la clase **\texttt{UUTReader}**
 mediante el codigo mostrado en la Figura x.
 
-En dicho código realizamos una llamada a las funciones **\texttt{gen_allv_str_list}** y **\texttt{gen_arbitrary_str_listQ}** de las clases **\texttt{TemplateAllv}** y **\texttt{TemplateArbitrary}** respectivamente. Ambas funciones reciben como párametro una lista de Strings que contiene todos los nombres de los tipos definidos por el usuario y a partir de ella crean instancias para cada uno de dichos tipos en la clase a la que esta dirigida cada función.
+En dicho código realizamos una llamada a las funciones **\texttt{gen\_allv\_str\_list}** y **\texttt{gen\_arbitrary\_str\_listQ}** de las clases **\texttt{TemplateAllv}** y **\texttt{TemplateArbitrary}** respectivamente. Ambas funciones reciben como párametro una lista de Strings que contiene todos los nombres de los tipos definidos por el usuario y a partir de ella crean instancias para cada uno de dichos tipos en la clase a la que esta dirigida cada función.
 
 Dicha lista de tipos definidos por el usuario se calcula en primer lugar hayando los tipos de los datos de la precondición y despues sobre dicha lista de tipos de entrada aplicando la función **\texttt{notDefTypesQMonad}** la cual filtra cuales de ellos no son instancias predefinidas.(Figura x).
 
@@ -453,7 +453,30 @@ Analizando dicha función y sus auxiliares podemos observar que se tratan de una
 
 ### 4.4: La generación de casos
 
+
 ### 4.5: La ejecución de casos
+La ejecución de los casos de prueba se realiza desde la función **\texttt{test_UUT}** la cual simplemente se encarga de llamar a **\texttt{test}**. Dicha función **\texttt{test}** es donde llamaremos a la función **\texttt{prueba}** sobre el conjunto de casos de prueba, que en esta versión se generará siempre mediante la función **\texttt{smallest}** (Figura x).
+
+Tras esto veamos la función **\texttt{prueba}** y a sus funciones auxiliares.
+ 
+ **\texttt{prueba}** recibe como parámetro la lista de todos los casos de prueba generados y devuelve una lista de booleanos que indica cuales de los casos probados pasaron la postcondición y cuales no. Para ello en un primer lugar filtra los casos para ver cuales de ellos cumplen la precondición establecida usando **\texttt{filtered\_pre}** y aplica la funcion **\texttt{output}** sobre esos input que pasaron la precondición para saber cuales son las salidas correspondientes a dichas entradas. Tras ello llama a la función **\texttt{pos\_f}** con los resultados de las dos anteriores como parámetros para calcular la lista de los casos que habiendo pasado la precondición también cumplen la postcondición. (Figura x)
+ 
+ A su vez tenemos tres funciones auxiliares de **\texttt{prueba}** que son **\texttt{pre\_f}**, **\texttt{fun\_f}** y **\texttt{pos\_f}** las cuales se encargan respectivamente de llamar a la precondición la función y la postcondición bajo prueba. (Figura x)
+  - La primera, **\texttt{pre\_f}** se trata de un **\texttt{filter}** de sobre todos los casos de prueba utilizando para ello la función **\texttt{prec\_f\_aux}** la cual se explicará más adelante.
+  - La segunda, **\texttt{fun\_f}** se encarga de mapear la función **\texttt{fun\_f\_aux}** sobre cada uno de los casos de prueba para conseguir la lista de outputs. Dicha función auxiliar tambien se explicará a continuación.
+  - La tercera **\texttt{pos\_f}** se encarga de llamar a la función **\texttt{pos\_f\_aux}** sobre dos valores el primero de ellos un input de la lista de aquellos que cumplen la precondición y el segundo el output obtenido al ejecutar la función con dicho input lo cual nos devolverá un booleano indicando si dicho caso pasa o no la postcondición. La función **\texttt{pos\_f}** también será explicada a continuación.
+
+Las tres funciones nombradas anteriormente **\texttt{prec\_f\_aux}**, **\texttt{fun\_f\_aux}** y **\texttt{pos\_f\_aux}** (Figura x) utilizan están construidas utilizando Template Haskell ya que deben de adaptarse al número de parámetros que tenga la función bajo prueba. Se puede observar que para las dos primeras su único parámetro es el siguiente splice **\texttt{$(linkedTupleP uutNargs)}** el cual representa un patrón de una tupla de tamaño variable. La tercera función cuenta ademas con un segundo parámetro **\texttt{$(varP $ mkName "o")}** que siempre será un elemento único y será el output correspondiente a la tupla de su primer parámetro
+
+Las dos primeras de estas tres funciones simplemente se ocupan de aplicar respectivamente las funciones **\texttt{uutPrec}** y **\texttt{uutMethod}** sobre todos los parámetros que ellas reciben encapsulados dentro de la tupla. La tercera de ellas aplica la función **\texttt{uutPost}** ambos sobre todos los parámetros que recibe encapsulados en la tupla y también sobre su segundo parámetro (correspondiente al output).
+
+Por último vamos a echarle un vistazo a la función auxiliar **\texttt{linkedTupleP}** (Figura x). Esta se encarga de recibir un entero que se trata de el numero de parámetros y generar un patrón que sea una tupla de ese tamaño (Devuelve un PatQ pues es la manera de representar los patrones en Template Haskell).
+
+![test_UUT and test funcions](imagenes/test_UUT.jpg "test_UUT and test funcions")
+
+![prueba and auxiliar functions](imagenes/prueba.jpg "prueba and auxiliar functions")
+
+![linkedTupleP function](imagenes/linkedTupleP.jpg "linkedTupleP function")
 
 \pagebreak
 
