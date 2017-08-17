@@ -451,11 +451,10 @@ Analizando dicha función y sus auxiliares podemos observar que se tratan de una
 
 ![Función notDefTypesQMonad y auxiliares](imagenes/notDefTypes_andAuxs.jpg "Función notDefTypesQMonad y auxiliares")
 
-### 4.4: La generación de casos
+### 4.4: La generación y ejecución de casos
+La ejecución de los casos de prueba se realiza desde la función **\texttt{test_UUT}** la cual simplemente se encarga de llamar a **\texttt{test}**.
 
-
-### 4.5: La ejecución de casos
-La ejecución de los casos de prueba se realiza desde la función **\texttt{test_UUT}** la cual simplemente se encarga de llamar a **\texttt{test}**. Dicha función **\texttt{test}** es donde llamaremos a la función **\texttt{prueba}** sobre el conjunto de casos de prueba, que en esta versión se generará siempre mediante la función **\texttt{smallest}** (Figura x).
+Dicha función **\texttt{test}** es donde llamaremos a la función **\texttt{prueba}** sobre el conjunto de casos de prueba, que en esta versión se generará siempre mediante la función **\texttt{smallest}** que como podemos ver es llamada dentro de la cláusula where de **\texttt{test}**. Como previamente hemos creado instancias de las clases **\texttt{Allv}** y **\texttt{Arbitrary}** para todos los tipos definidos por el usuario sabemos que esta llamada será posible sea cual sea el tipo de los datos (Figura x).
 
 Tras esto veamos la función **\texttt{prueba}** y a sus funciones auxiliares.
  
