@@ -9,13 +9,18 @@ Resumen:
 
 Summary:
 
+\pagebreak
 
 # 1.a: Introducción
-En el siguiente trabajo vamos a tratar la plataforma **CaseGenerator**, que se engloba dentro del proyecto CAVI-ART, siendo la parte encargada de generar de manera automatizada los casos de prueba adaptándolos a las necesidades de cada ejecución. Este proyecto toma como base las ideas llevadas a cabo anteriormente por programas como **Quickcheck**, **Korat** o **Smallcheck** pero intentando conseguir un programa final que sea más directo de usar. Para ello era necesario eliminar la necesidad del usuario de definir un nuevo generador para cada nuevo tipo que define, dejando la tarea de investigar estos tipos y deducir un generador de casos óptimo para ellos en manos del propio programa.
+Una de las partes más costosas dentro del desarrollo de programas es el testeo, ya que requiere un gran esfuerzo humano para poder especificar los diferentes casos de prueba, lanzarlos y analizar los resultados. Ello provoca que en la mayoría de los casos los programas se prueben mucho menos a fondo de lo que sería necesario. Por ello, en los últimos años han sido desarrolladas diversas herramientas para automatizar de manera parcial dicho proceso de testeo, sin embargo la mayoría de ellas están especializadas en un único lenguaje de programación.
 
-A su vez profundizaremos en la estructura de clases de CaseGenerator y visualizaremos su código de manera que queden claras todas las ideas detrás de su funcionamiento y las razones por las que se decidieron utilizar técnologías como la librería **\texttt{Generics}** del compilador GHC y la extensión de Haskell llamada **\texttt{Template Haskell}**.
+Nuestro objetivo es conseguir una plataforma que permita el testeo de aplicaciones de manera inmediata para el usuario y que admita como entrada un programa escrito en cualquier lenguaje de programación.
 
-Por último tras entender el funcionamiento de la plataforma veremos algunos ejemplos prácticos de como funciona el programa al ser ejecutado con funciones reales.
+En el siguiente trabajo vamos a tratar la plataforma **CaseGenerator**, que se engloba dentro del proyecto CAVI-ART, siendo esta parte la encargada de generar los casos de prueba de manera automatizada, adaptándolos a las necesidades de cada ejecución. Este proyecto toma como base las ideas desarrolladas anteriormente por programas como **Quickcheck**, **Korat** o **Smallcheck**, pero intentando conseguir un programa final que sea más directo y fácil de usar, y a la vez compatible con diversos lenguajes de programación tanto funcionales como no funcionales. Para lograr el primer objetivo hemos eliminado la obligación de que el usuario defina un nuevo generador para cada uno de los nuevos tipos definidos. Así, será el propio programa el que realice la tarea de investigar estos tipos y deducir un generador de casos óptimo para cada uno de ellos. Para lograr el segundo en cambio hemos creado una Representación Intermedia (IR) a la que se traducen los programas antes de ser testeados y que permite escribir una plataforma independiente del lenguaje de programación.
+
+A su vez profundizaremos en la estructura de clases de CaseGenerator y visualizaremos su código, de manera que queden claras todas las ideas detrás de su funcionamiento y las razones por las que decidimos utilizar algunas técnologías, como la librería **\texttt{Generics}** del compilador GHC y la extensión de Haskell llamada **\texttt{Template Haskell}**.
+
+Por último, tras explicar el funcionamiento de la plataforma expondremos algunos ejemplos prácticos del funcionamiento del programa al ser ejecutado con funciones reales.
 
 \pagebreak
 
