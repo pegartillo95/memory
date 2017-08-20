@@ -3,53 +3,61 @@ title: TFG
 bibliography: bibliography.bib
 csl: ieee.csl
 ---
+
+Resumen: 
+
+
+Summary:
+
+
 # 1.a: Introducción
+En el siguiente trabajo vamos a tratar la plataforma **CaseGenerator**, que se engloba dentro del proyecto CAVI-ART, siendo la parte encargada de generar de manera automatizada los casos de prueba adaptándolos a las necesidades de cada ejecución. Este proyecto toma como base las ideas llevadas a cabo anteriormente por programas como **Quickcheck**, **Korat** o **Smallcheck** pero intentando conseguir un programa final que sea más directo de usar. Para ello era necesario eliminar la necesidad del usuario de definir un nuevo generador para cada nuevo tipo que define, dejando la tarea de investigar estos tipos y deducir un generador de casos óptimo para ellos en manos del propio programa.
 
-\pagebreak
+A su vez profundizaremos en la estructura de clases de CaseGenerator y visualizaremos su código de manera que queden claras todas las ideas detrás de su funcionamiento y las razones por las que se decidieron utilizar técnologías como la librería **\texttt{Generics}** del compilador GHC y la extensión de Haskell llamada **\texttt{Template Haskell}**.
 
-# 1.b: Introduction
+Por último tras entender el funcionamiento de la plataforma veremos algunos ejemplos prácticos de como funciona el programa al ser ejecutado con funciones reales.
 
 \pagebreak
 
 # 2. Preliminares
 
 ### 2.1: CAVI-ART Project
-En esta seccion explicamos el proyecto CAVI-ART el cual es un proyecto actualmente en desarollo en la UCM y del cual forma parte mi TFG.
+En esta seccion explicamos el proyecto CAVI-ART, actualmente en fase de desarollo en la UCM y del cual forma parte mi TFG.
 
 La plataforma **CAVI-ART** consiste en un conjunto de herramientas pensadas para ayudar al programador en la validacion de programas escritos en diferentes lenguajes. Estas ayudas incluyen la extracción automática y prueba de condiciones de verificación, la prueba automática de terminación (siempre que sea decidible usando la tecnología actual), la inferencia automática de algunos invariantes y la generación automática y ejecución de casos de prueba. [@caviart1; @caviart2; @caviart3]
 
-Un aspecto clave de la plataforma es su Representación Intermedia de los programas (de aquí en adelante IR). Programas escritos en lenguajes convencionales como C++, Java, Haskell, OCaml y otros se traducen a la IR, sobre la cual se realizan todas las actividades mencionadas anteriormente. La intencion es programar la mayor parte de la plataforma una sola vez, de manera que sea independiente del lenguaje de programación utilizado.
+Un aspecto clave de la plataforma es su Representación Intermedia de los programas (de aquí en adelante IR). Los programas escritos en lenguajes convencionales como C++, Java, Haskell, OCaml y otros, se traducen a la IR, sobre la que se realizan todas las actividades mencionadas anteriormente. La intencion es programar la mayor parte de la plataforma una sola vez, de manera que sea independiente del lenguaje de programación utilizado.
 
-El diseño de la IR fue realizado con la intencion de facilitar las tareas nombradas con anterioridad tanto como fuera posible. Un diseño simple que cuenta con muy pocas construcciones primitivas. Nunca se pensó en la IR como código ejecutable sino como una sintaxis abstracta sobre la cual resultaria fácil realizar análisis estático y verificación formal. Pero en los últimos meses se decidió convertir la IR en código ejecutable, sobre la cual sería posible ejecutar pruebas independientes del lenguaje, y construir herramientas de testeo independientes del lenguaje. La mayoría del trabajo hecho en este campo y la mayoría de las herramientas de testeo existentes están ligadas a un lenguaje en concreto. 
+La IR se diseñó con la intención de facilitar al máximo posible las tareas nombradas con anterioridad tanto como fuera posible, mediante un diseño simple que cuenta con muy pocas construcciones primitivas. Nunca se pensó en la IR como código ejecutable sino como una sintaxis abstracta para facilitar el análisis estático y la verificación formal. Sin embargo en los últimos meses se decidió convertir la IR en código ejecutable, para posibilitar la ejecución de pruebas y construcción de herramientas de testeo, ambas independientes del lenguaje. Esto supone una ventaja ya que la mayoría de las herramientas de testeo existentes están ligadas a un lenguaje en concreto. 
 
-Dicho trabajo de traducir la IR a Haskell y hacer ejecutables los asertos se engloba dentro del trabajo de fin de grado de Marta Aracil Muñoz con título **Implementación de asertos ejecutables para una plataforma de verificación**.
-
-Esquema del proyecto CAVI-ART(Fig 1)
+La parte del proyecto encargada de traducir la IR a Haskell y hacer ejecutables los asertos se engloba dentro del trabajo de fin de grado de Marta Aracil Muñoz con título **Implementación de asertos ejecutables para una plataforma de verificación** que también se engloba dentro del proyecto CAVI-ART.
 
 ![Esquema del proyecto CAVI-ART](imagenes/caviart.jpg "Esquema del proyecto CAVI-ART")
 
 \pagebreak
 
+A continuación pasamos a describir las tecnologías más importantes usadas en el desarrollo de nuestro programa.
+
 ### 2.2: QuickCheck
 
-**Quickcheck** [@quickcheck] es una herramienta de Haskell pensada para probar funciones escritas en dicho lenguaje sobre un conjunto de casos de prueba generados de manera aleatoria. Dicho programa resultó ser de gran ayuda pues tiene ideas similares a lo que queríamos conseguir con nuestro proyecto ya que se trata tambien de un sistema de prueba tipo caja negra.
-Aunque también cuenta con  algunas diferencias sobre todo en la generación de los casos de prueba, ya que **Quickcheck** los genera de manera aleatoria mientras que nuestro proyecto los genera de manera exhaustiva.
+**Quickcheck** [@quickcheck] es una herramienta de Haskell pensada para probar funciones escritas en dicho lenguaje sobre un conjunto de casos de prueba generados de manera aleatoria. Dicho programa resultó ser de gran ayuda, pues tiene ideas similares a lo que queríamos conseguir con nuestro proyecto, ya que se trata también de un sistema de prueba tipo caja negra.
+Sin embargo cuenta con  algunas diferencias, sobre todo en la generación de los casos de prueba, ya que **Quickcheck** los genera de manera aleatoria, mientras que nuestro proyecto los genera de manera exhaustiva.
 
 ##### Ejemplo de funcionamiento del programa
 
-Vamos a trabajar en este caso con la siguiente propiedad de las listas, cierta para cualquier lista finita.
+En este caso vamos a trabajar con la siguiente propiedad de las listas, cierta para cualquier lista finita.
 
 ```haskell
   prop_RevApp xs ys = 
     reverse (xs++ys) == reverse ys++reverse xs
 ```
 
-Ahora lanzamos el programa **Quickcheck** para comprobar si pasa todos los casos de prueba.
+Ahora lanzamos el programa **Quickcheck** para comprobar si supera todos los casos de prueba.
 ```haskell
-  Main> quickCheck prop_RevApp
+  Main> QuickCheck prop_RevApp
   OK: passed 100 tests.
 ```
-Veamos ahora que pasa en caso de que nuestra función no esté bien definida. 
+Veamos ahora que pasa en caso de que nuestra función no esté definida correctamente. 
 
 ```haskell
   prop_RevApp2 xs ys = 
@@ -64,7 +72,7 @@ Al ejecutar la nueva funcion desde **Quickcheck**.
   [-2,1]
 ```
 
-Aquí podemos observar que en caso de fallo **Quickcheck** nos devuelve el contraejemplo de tamaño mínimo. Lo que nos dice esta vez es que nuestra definición ha fallado en el primer test y que en dicho caso las respectivas listas para las que ha sido probado falso son [2] y [-2,1].
+Aquí podemos observar que en caso de fallo **Quickcheck** nos devuelve el contraejemplo de tamaño mínimo, lo que nos indica esta vez es que nuestra definición ha fallado en el primer test y que en dicho caso las respectivas listas para las que ha sido probado falso son [2] y [-2,1].
 
 #####Leyes condicionales
 En algunos casos las leyes que queremos definir no pueden ser representadas mediante una simple función y solo son ciertas bajo unas precondiciones muy concretas. Para dichos casos **Quickcheck** cuenta con el operador de implicación **\texttt{==>}** para representar dichas leyes condicionales.
@@ -72,16 +80,16 @@ Por ejemplo una ley tan simple como la siguiente:
 ```haskell
   x <= y ==> max x y == y
 ```
-Puede ser representada por la siguiente definición.
+Puede ser representada mediante la siguiente definición.
 ```haskell
   prop_MaxLe :: Int -> Int -> Property
   prop_MaxLe x y = x <= y ==> max x y == y
 ```
 
-En este ejemplo podemos observar que el resultado de la función es de tipo **\texttt{Property}** en vez de **\texttt{Bool}**, lo cual es debido a que en el caso de las leyes condicionales en vez de probar la propiedad para 100 casos de prueba aleatorios, esta es probada contra 100 casos que cumplan la precondición establecida. Si uno de los candidatos no cumple la propiedad este será descartado y se considerará el siguiente. **Quickcheck** genera un máximo de 1000 casos de prueba y si entre ellos no se han encontrado al menos 100 que cumplan la precondición simplemente informa al usuario cuantos se han encontrado que la cumplan. Dicho límite está pensado para que el programa no busque indefinidamente en caso de que no existan más casos que cumplan dicha precondición.
+En este ejemplo podemos observar que el resultado de la función es de tipo **\texttt{Property}** en vez de **\texttt{Boolean}**, lo cual es debido a que en el caso de las leyes condicionales en vez de probar la propiedad para 100 casos aleatorios, ésta es probada contra 100 casos que cumplan la precondición establecida. Si uno de los candidatos no la cumple será descartado y se considerará el siguiente. **Quickcheck** genera un máximo de 1000 casos de prueba y si entre ellos no se han encontrado al menos 100 que cumplan la precondición, simplemente informa al usuario cuantos la cumplen. Dicho límite está pensado para que en caso de que no existan más casos que cumplan dicha precondición el programa no busque indefinidamente.
 
 #####Monitorizando los datos
-Al testear propiedades debemos tener cuidado, pues quizás parezca que hemos probado una propiedad a fondo para estar seguros de su credibilidad pero esta simplemente ser aparente. Voy a intentar ejemplificarlo usando la inserción en una lista ordenada.
+Al testear propiedades debemos tener cuidado, pues quizás parezca que hemos probado una propiedad a fondo para estar seguros de su credibilidad pero esta simplemente ser aparente. Intentaremos ejemplificarlo usando la inserción en una lista ordenada.
 ```haskell
   prop_Insert :: Int -> [Int] -> Property
   prop_Insert x xs =
@@ -89,14 +97,14 @@ Al testear propiedades debemos tener cuidado, pues quizás parezca que hemos pro
       classify (null xs) "trivial" $
         ordered (insert x xs)
 ```
-Esto nos permite saber cuantas de las pruebas se realizaron sobre una lista vacia. En cuyo caso la condición de **\texttt{ordered xs}** es trivial.
-Si ejecutamos esta nueva función con **Quickcheck** obtenemos el siguiente mensaje.
+Esto nos permite conocer cuantas de las pruebas se realizaron sobre una lista vacia. En cuyo caso la condición de **\texttt{ordered xs}** es trivial.
+Si ejecutamos esta nueva función con **Quickcheck** obtendremos el siguiente mensaje.
 ```haskell
   Ok, passed 100 tests (43% trivial)
 ```
 Es decir que el 43% de los tests realizados son sobre una lista vacia.
 
-Pero a su vez **Quickcheck** nos ofrece la posibilidad de un mejor análisis, más alla de etiquetar uno de los casos que nos interese. Podemos realizar una especie de histograma, utilizando la palabra reservada **\texttt{collect}**, que nos dará una mayor información de la distribución de los casos de prueba, por ejemplo en este caso según su longitud.
+Pero a su vez **Quickcheck** nos ofrece la posibilidad de un mejor análisis, más alla de etiquetar uno de los casos que nos interese. Podemos realizar una especie de *histograma*, utilizando la palabra reservada **\texttt{collect}**, que nos dará una mayor información de la distribución de los casos de prueba, por ejemplo en este caso según su longitud.
 ```haskell
   prop_Insert :: Int -> [Int] -> Property
   prop_Insert x xs =
@@ -115,18 +123,18 @@ Al ejecutarlo obtendriamos un resultado como el siguiente, separado según los t
   1% 5.
 ```
 
-######Definir generadores
-En primer lugar vamos a empezar definiendo la clase de tipos **\texttt{Arbitrary}** de la cual un tipo es una instancia si podemos generar casos aleatorios de él. La manera de generar los casos de prueba depende por supuesto del tipo.
+######Como definir generadores
+En primer lugar vamos a empezar definiendo la clase **\texttt{Arbitrary}** de la cual un tipo es una instancia si podemos generar casos aleatorios de él. La manera de generar los casos de prueba depende por supuesto del tipo.
 ```haskell
   class Arbitrary a where
     arbitrary :: Gen a
 ```
 
-**\texttt{Gen}**  es un tipo abstracto representando el generador para el tipo **\texttt{a}**, que bien puede ser el generador por defecto o uno creador por el programador para el caso específico. El tipo abstracto **\texttt{Gen}** se define como:
+**\texttt{Gen}**  es un tipo abstracto representando el generador para el tipo **\texttt{a}**, que bien puede ser el generador por defecto o uno creado por el programador para el caso específico. El tipo abstracto **\texttt{Gen}** se define como:
 ```haskell
   newtype Gen a = Gen (Rand -> a)
 ```
-En esta definición **\texttt{Rand}** se trata de un número semilla aleatorio y un generador no es más que una función que puede generar una **\texttt{a}** de una manera pseudoaleatoria.
+En esta definición **\texttt{Rand}** es un número semilla aleatorio y un generador no es más que una función que puede crear una **\texttt{a}** de una manera pseudoaleatoria.
 
 Ahora vamos a echarle un vistazo a las posibilidades que nos ofrece **Quickcheck** a la hora de definir los generadores de casos para los tipos de datos definidos por el usuario.
 
@@ -139,55 +147,55 @@ Un ejemplo de un generador para dicho tipo en el cual los tres colores son equip
   instance Arbitrary Colour where
     arbitrary = oneof [return Red | return Blue | return Green]
 ```
-en el cual podemos observar el funcionamiento de la función **\texttt{oneof}** que se encarga de devolver uno de los elementos de la lista dando la misma probabilidad a todos ellos.
+en el cual podemos observar el funcionamiento de la función **\texttt{oneof}**, que se encarga de devolver uno de los elementos de la lista dando la misma probabilidad a todos ellos.
 
-Vamos a observar otro ejemplo, un generador para listas de un tipo **\texttt{a}** arbitrario.
+Vamos a observar otro ejemplo, en este caso un generador para listas de un tipo **\texttt{a}** arbitrario.
 ```haskell
   instance Arbitrary a => Arbitrary [a] where
     arbitrary = frequency
       [ (1, return [])
         (4, liftM2 (:) arbitrary arbitrary)]
 ```
-En ella usamos la función **\texttt{frequency}** la cual funciona similar a **\texttt{oneof}** pero dandole pesos diferentes a los diferentes casos. En este ejemplo le damos peso 1 a la lista vacia y peso 4 a la lista compuesta de otras 2 listas, con lo cual obtenemos casos de prueba de una longitud media de 4 y evitando de esta manera el problema visto antes de que la mayoría de los casos de prueba sean listas vacias.
+En ella usamos la función **\texttt{frequency}** la cual funciona de manera similar a **\texttt{oneof}**, pero dándole pesos distintos a los diferentes casos. En este ejemplo le damos peso 1 a la lista vacia y peso 4 a la lista compuesta de otras 2 listas, con lo cual obtendremos casos de prueba de una longitud media de 4 y de esta manera evitaremos el problema indicado anteriormente en el que la mayoría de los casos de prueba sean listas vacias.
 
 ### 2.3: Librería Generics de GHC
 
-El siguiente punto a tratar en estos preliminares es la librería **Generics** del compilador GHC de Haskell[@generics], una librería utilizada principalmente para la generación automática de instancias de funciones correctas para cualquiera que sea el tipo de datos. En el caso de este proyecto **Generics** apareció como una librería necesaria para escribir nuestro programaz de manera que funcionaran para cualquier tipo de datos, incluídos los definidos por el usuario y de los cuales no podemos tener conocimiento en adelantado.
+El siguiente punto a tratar en estos preliminares es la librería **\texttt{Generics}** del compilador GHC de Haskell[@generics], una librería utilizada principalmente para la generación automática de instancias de funciones correctas para cualquiera que sea el tipo de datos. En el caso de este proyecto **\texttt{Generics}** apareció como una librería necesaria para escribir nuestro programa de manera que funcionara para cualquier tipo de datos, incluídos los definidos por el usuario y de los cuales no podemos tener conocimiento por adelantado.
 
 Dicha librería dentro de Haskell es posible por dos caracteristicas del propio lenguaje:
 
-1. En primer lugar la existencia de las clases de tipos, que actuan como una interfaz de Java definiendo el comportamiento de las operaciones sobre los tipos que pertenecen a dicha clase.
+1. La existencia de las clases de tipos, que actúan como una interfaz de Java definiendo el comportamiento de las operaciones sobre los tipos que pertenecen a dicha clase.
 
-2. En segundo lugar, gracias a la existencia del polimorfismo de tipo Ad-hoc. Este nos permite abstraer una operación sobre una o más clases de tipos simplemente con la condición de que el tipo concreto tenga unas propiedades como por ejemplo que sea ordenable (pertenezca a la clase **Ord**) o que sus elementos admitan comparaciones por igualdad (que pertenezca a la clase **Eq**).
+2. Por la existencia del *polimorfismo de tipo Ad-hoc*. Este nos permite abstraer una operación sobre una o más clases de tipos simplemente con la condición de que el tipo concreto tenga unas propiedades como por ejemplo que sea ordenable (pertenezca a la clase **\texttt{Ord}**) o que sus elementos admitan comparaciones por igualdad (que pertenezca a la clase **\texttt{Eq}**).
 
-En el caso de la librería \texttt{Generics} esta permite definir funciones genéricas para cualquiera que sea el tipo al que se apliquen ya que dicha definición se realiza sobre la estructura del tipo y teniendo en cuenta que todo tipo algebraico en Haskell utiliza un número pequeño de construcciones (uniones, productos cartesianos, recursion y tipos básicos).
+En el caso de la librería **\texttt{Generics}**, ésta permite definir funciones genéricas para cualquiera que sea el tipo al que se apliquen ya que dicha definición se realiza sobre la estructura del tipo y teniendo en cuenta que todo tipo algebraico en Haskell utiliza un número pequeño de construcciones (uniones, productos cartesianos, recursión y tipos básicos).
 
-En el caso de esta librería, la clase de tipos principal (Generic) expresa la posibilidad de describir un tipo de datos en términos de un conjunto simple de combinadores. Estos combinadores son:
+En el caso de esta librería, la clase de tipos principal (**\texttt{Generic}**) expresa la posibilidad de describir un tipo de datos en términos de un conjunto simple de combinadores. Estos combinadores son:
 
-- En primer lugar debemos definir el comportamiento deseado para los tipos de datos vacios (representados con **V1** en Generics)
+- En primer lugar debemos definir el comportamiento deseado para los tipos de datos vacios (representados con **\texttt{V1}** en **\texttt{Generics}**)
 
-- En segundo lugar debemos definir el comportamiento deseado para los tipos de datos cuyo constructor carece de parámetros (representados con **U1** en Generics).
+- En segundo lugar debemos definir el comportamiento deseado para los tipos de datos cuyo constructor carece de parámetros (representados con **\texttt{U1}** en **\texttt{Generics}**).
 
-- En tercer lugar se trata de definir el comportamiento para los tipos compuestos de acuerdo a como se forman. En Haskell los tipos compuestos solo pueden definirse mediante dos operaciones partiendo de los tipos básicos. Estas dos operaciones son la suma y el producto de tipos (representados como \texttt{:+:} y \texttt{:*:} respectivamente en **\texttt{Generics}**). Deberemos definir como queremos que sea el comportamiento de las funciones de nuestra clase genérica de acuerdo a como se forma nuestro tipo a partir de los tipos básicos.
+- En tercer lugar se trata de definir el comportamiento para los tipos compuestos de acuerdo a como se forman. En Haskell los tipos compuestos solo pueden definirse mediante dos operaciones partiendo de los tipos básicos. Estas dos operaciones son la suma y el producto de tipos (representados como \texttt{:+:} y \texttt{:*:} respectivamente en **\texttt{Generics}**). Deberemos establecer como queremos que sea el comportamiento de las funciones de nuestra clase genérica de acuerdo a como se forma nuestro tipo a partir de los tipos básicos.
 
-- Por último están dos tipos para representar meta-información y etiquetado de tipos(representados respectivamente por **M1** y **K1**), que nos permitirán definir el comportamiento esperado para las funciones cuando esta depende de las etiquetas o parte de la meta-información del tipo.
+- Por último están dos tipos para representar meta-información y etiquetado de tipos (representados respectivamente por **M1** y **K1**), que nos permitirán definir el comportamiento esperado para las funciones cuando esta depende de las etiquetas o parte de la meta-información del tipo.
 
-Una vez definidas las funciones para estos cinco diferentes combinadores es necesario definir algunas instancias para los tipos predefinidos como **Int**, **Char**, **Boolean**... de manera que si el usuario crea un tipo complejo como por ejemplo un Diccionario con valores de **Int** como clave y **Char** como valores tengamos un punto de partida para construir mediante Generics las instancias en nuestra clase para los nuevos tipos de datos.
+Una vez definidas las funciones para estos cinco diferentes combinadores es necesario definir algunas instancias para los tipos predefinidos como **\texttt{Int}**, **\texttt{Char}**, **\texttt{Boolean}**... de manera que si el usuario crea un tipo complejo como por ejemplo un Diccionario con variables de tipo **\texttt{Int}** como clave y **\texttt{Char}**, como valores tengamos un punto de partida para construir mediante Generics las instancias en nuestra clase para los nuevos tipos de datos.
 
 ### 2.4 Template Haskell
-En este apartado trataremos sobre **Template Haskell** [@template_haskell], una extensión sobre el lenguaje original que añade la posibilidad de realizar metaprogramación en Haskell, de una manera similar al sistema de templates de C++, de ahí su nombre, permitiendo a los programadores computar parte de la generación de código en tiempo de compilación dependiendo de las necesidades.
+En este apartado trataremos sobre **\texttt{Template Haskell}** [@template_haskell], una extensión sobre el lenguaje original que añade la posibilidad de realizar metaprogramación en Haskell, de una manera similar al sistema de *templates de C++*, de ahí su nombre, permitiendo a los programadores computar parte de la generación de código en tiempo de compilación dependiendo de las necesidades.
 
 ##### Un ejemplo de la idea básica
-Imaginemos que escribir una funcion para imprimir un valor en Haskell siguiendo el estilo de C. Nos gustaría poder escribir algo como esto en Haskell:
+Imaginemos que escribimos una funcion para imprimir un valor en Haskell siguiendo el estilo de C. Nos gustaría poder escribir algo como esto en Haskell:
 ```haskell
     printf ”Error: %s on line %d.” msg line
 ```
-El caso es que en Haskell uno no puede definir **printf** de una manera tan sencilla pues su tipo depende del valor de su primer argumento. En **Template Haskell** en cambio podemos definir **printf** de manera que sea definido por el usuario, eficiente y garantice la seguridad de tipos de Haskell.
+El caso es que en Haskell uno no puede definir **\texttt{printf}** de una manera tan sencilla pues su tipo depende del valor de su primer argumento. En **\texttt{Template Haskell}** en cambio podemos definir **\texttt{printf}** de manera que sea eficiente y garantice la seguridad de tipos de Haskell.
 
 ```haskell
     $(printf ”Error: %s on line %d”) msg line
 ```
-El símbolo $ indica "evaluar en tiempo de compilación". La llamada a la función **printf** devuelve a Haskell una expresión que es insertada en el lugar de la llamada después de lo cual se puede realizar la compilación de la expresión. Por ejemplo el codigo entre parentesis:
+El símbolo $ indica "evaluar en tiempo de compilación". La llamada a la función **\texttt{printf}** devuelve a Haskell una expresión que es insertada en el lugar de la llamada, después de lo cual se puede realizar la compilación de la expresión. Por ejemplo el código entre paréntesis:
 
 ```haskell
     $(printf ”Error: %s on line %d”)
@@ -196,13 +204,13 @@ El símbolo $ indica "evaluar en tiempo de compilación". La llamada a la funci�
 ```haskell
     (\ s0 -> \ n1 -> ”Error: ” ++ s0 ++ ” on line ” ++ show n1)
 ```
-Sobre la cual se aplicará la comprobación de tipos y se aplicará sobre **msg** y **line**
+Sobre la cual se realizará la comprobación de tipos y después se aplicará sobre **\texttt{msg}** y **\texttt{line}**
 
 ##### Como usar template Haskell
 
-Lo primero que hay que resaltar es el hecho que las funciones de **Template Haskell** que son ejecutadas en tiempo de compilación están escritas en el mismo lenguaje que las funciones utilizadas en tiempo de ejecución. Una gran ventaja de esta aproximación es que todas las librerías existentes y técnicas usadas en Haskell pueden ser utilizadas directamente en Template Haskell. Por otro lado, una de las posibles desventajas de esta aproximación puede ser la necesidad de tener que utilizar notaciones como "$" o "[||]" (conocidas como **splicing** y **quasi-quotes**) para especificar que partes del código se deben ejecutar en tiempo de ejecución y cuales en tiempo de compilación.
+Lo primero que hay que resaltar es el hecho que las funciones de **\texttt{Template Haskell}** que son ejecutadas en tiempo de compilación están escritas en el mismo lenguaje que las funciones utilizadas en tiempo de ejecución. Una gran ventaja de esta aproximación es que todas las librerías existentes y las técnicas usadas en Haskell pueden ser utilizadas directamente en Template Haskell. Por otro lado, una de las posibles desventajas de esta aproximación es la necesidad de tener que utilizar notaciones como "$" o "[||]" (conocidas como *splicing* y *quasi-quotes* respectivamente) para especificar que partes del código se deben ejecutar en tiempo de ejecución y cuales en tiempo de compilación.
 
-En los ejemplos más sencillos como el anteriormente presentado sobre como escribir una función printf en Template Haskell la notación del **splicing** o la **quasi-quotation** pueden resultar de gran ayuda. El problema es que tan pronto como empezamos a hacer cosas más complejas en meta-programación esta notación deja de ser suficiente. Por ejemplo no es posible definir una función para seleccionar el i-ésimo elemento de una tupla de n elementos usando solo esas dos notaciones. Dicha función en **Template Haskell** sería asi.
+En los ejemplos más sencillos, como el anteriormente presentado sobre como escribir una función **\texttt{printf}** en **\texttt{Template Haskell}** la notación del splicing o la quasi-quotation pueden resultar de gran ayuda. El problema es que tan pronto como empezamos a hacer cosas más complejas en meta-programación esta notación deja de ser suficiente. Por ejemplo no es posible definir una función para seleccionar el i-ésimo elemento de una tupla de n elementos usando solo esas dos notaciones. Dicha función en **\texttt{Template Haskell}** sería asi.
 
 ```haskell
     sel :: Int -> Int -> ExpQ
@@ -220,17 +228,17 @@ En los ejemplos más sencillos como el anteriormente presentado sobre como escri
               as = ["a" ++ show i | i <- [1..n]]
 ```
 
-Para explicar un poco este código vamos a empezar de abajo a arriba, para entender las partes que usaremos despues en la función principal **sel**.
-En primer lugar **as** lo que hace es crear una lista de nombres de aes desde a1 hasta an. La segunda de ellas, **rhs** se encarga de coger el i-esimo elemento de la lista de aes y devolverlo como una variable de tipo **ExpQ** que es el tipo utilizado en **Template Haskell** para las expresiones. La función **pat** transforma en primer lugar la lista de **Strings** en una lista de variables de tipo **PatQ** que es el tipo utilizado en TH para referirse a los patrones y después junta dicha lista en una tupla de tipo **PatQ**. Después al realiza un emparejamiento de la tupla tipo **PatQ** con el **rhs** mediante la función **simpleM** (simple Match).
-Finalmente la función **caseE** que toma como parametros una variable x (de tipo **ExpQ** como indica la quasi-quotation alrededor de x) y el emparejamiento devuelto por **alt**, realizando la sustituición de la **x** al lado izquierdo de la flecha por el patrón correspondiente y colocando al lado izquierdo de la flecha la **ExpQ** devuelta por **rhs** que es elemento de la tupla tomado.
+Para explicar un poco este código vamos a empezar de abajo a arriba, con el fin de entender las partes que usaremos despues en la función principal **\texttt{sel}**.
+En primer lugar el cometido de **\texttt{as}** es crear una lista de nombres de aes desde a1 hasta an. La segunda de ellas, **\texttt{rhs}** se encarga de coger el i-esimo elemento de la lista de aes y devolverlo como una variable de tipo **\texttt{ExpQ}** que es el tipo utilizado en **\texttt{Template Haskell}** para las expresiones. La función **\texttt{pat}** transforma en primer lugar la lista de **\texttt{Strings}** en una lista de variables de tipo **\texttt{PatQ}** que es el utilizado en **\texttt{TH}** para referirse a los patrones y después junta dicha lista en una tupla de tipo **\texttt{PatQ}**. Después realiza un emparejamiento de la tupla tipo **\texttt{PatQ}** con el **\texttt{rhs}** mediante la función **\texttt{simpleM}** (simple Match).
+Finalmente, la función **\texttt{caseE}** que toma como parámetros una variable x (de tipo **\texttt{ExpQ}** como indica la quasi-quotation alrededor de x) y el emparejamiento devuelto por **\texttt{alt}**, realizando la sustituición de la **\texttt{x}** al lado izquierdo de la flecha por el patrón correspondiente y colocando al lado izquierdo de la flecha la **\texttt{ExpQ}** devuelta por **\texttt{rhs}**, que es el elemento tomado de la tupla.
 
-Esta función se traduciria a una expresión lambda que por ejemplo si llamaramos a **sel 4 6** es decir el cuarto elemento de una tupla de 6 tendría esta forma
+Esta función se traduciria a una expresión lambda que realizando la llamada **\texttt{sel 4 6}** es decir seleccionar el cuarto elemento de una tupla de 6 tendría esta forma
 ```haskell
     (\(a1,a2,a3,a4,a5,a6) -> a4)
 ```
 
-##### Cosificación (Reification)
-La **cosificación** es la herramienta presente en Template Haskell para permitir al programador preguntar sobre el estado de la tabla de símbolos que guarda el compilador. Por ejemplo se puede escribir un código como el siguiente:
+##### Reification (Cosificación)
+La *reification* es la herramienta presente en **\texttt{Template Haskell}** que permite al programador preguntar sobre el estado de la tabla de símbolos que guarda el compilador. Por ejemplo se puede escribir un código como el siguiente:
 
 ```haskell
   module M where
@@ -249,10 +257,10 @@ La **cosificación** es la herramienta presente en Template Haskell para permiti
     here = reifyLocn
 ```
 
-La primera de las funciones declaradas devuelve un resultado de tipo **Decl** (equivalente a **Q Dec**), representando la declaración del tipo **T**. El siguiente computo **reifyType length** devuelve un resultado de tipo **Type** (equivalente a **Q Typ**) representando el conocimiento del compilador sobre el tipo de la función **length**.
-En tercer lugar **reifyFixity** devuelve la "fixity" de los argumentos de la función lo cual es muy util cuando se quiere deducir como imprimir algo. Finalmente **reifyLocn** devuelve un resultado de tipo **Q String** que representa la posición en el código fuente desde donde se ejecutó **reifyLocn**.
+La primera de las funciones declaradas devuelve un resultado de tipo **\texttt{Decl}** (equivalente a **Q Dec**), representando la declaración del tipo **\texttt{T}**. El siguiente cómputo **\texttt{reifyType length}** devuelve un resultado de tipo **\texttt{Type}** (equivalente a **\texttt{Q Typ}**) representando el conocimiento del compilador sobre el tipo de la función **\texttt{length}**.
+En tercer lugar **\texttt{reifyFixity}** devuelve la *fixity* de los argumentos de la función lo cual resulta muy útil cuando se quiere deducir como imprimir algo. Finalmente **\texttt{reifyLocn}** devuelve un resultado de tipo **\texttt{Q String}**, que representa la posición en el código fuente desde donde se ejecutó **\texttt{reifyLocn}**.
 
-De esta manera la cosificacion devuelve un resultado que puede ser analizado y utilizado en otros cálculos, pero hay que recordar que al tratarse de una herramienta del lenguaje para acceder a la tabla de símbolos y estar encapsulado dentro de la monada **Q** no puede ser usada como una función, por ejemplo con la función map (**map reifyType xs** sería incorrrecto).
+De esta manera la *reification* devuelve un resultado que puede ser analizado y utilizado en otros cálculos, pero hay que recordar, que al tratarse de una herramienta del lenguaje para acceder a la tabla de símbolos y estar encapsulado dentro de la mónada **\texttt{Q}**, no puede ser usada como una función, por ejemplo con la función map (**\texttt{map reifyType xs}** sería incorrrecto).
 
 \pagebreak
 
@@ -260,31 +268,36 @@ De esta manera la cosificacion devuelve un resultado que puede ser analizado y u
 
 ### 3.1: Black box testing en nuestro contexto
 
-En cuanto al mundo del testing existen dos grandes posibilidades, sistemas de tipo caja negra o sistemas de tipo caja blanca. En primer lugar los de caja negra son aquellos sistemas de testing que no se basan en la estructura interna si no que trabajan únicamente con la entrada sobre la que aplican una precondición y la salida sobre la que comprueban si cumple las postcondiciones establecidas. 
-En cambio los de caja blanca testean no solo las entradas y salidas del programa aplicandoles precondiciones y comprobando la postcondiciones si no que además se basan en la estructura interna del programa para realizar la generación de casos de prueba de forma que se cubra todo el texto del programa. Segun el criterio de cobertura deseado se pueden generar casos para ejercitar todas las condiciones o todas las ramas o todos los caminos.
+En el mundo del testing existen dos grandes posibilidades: sistemas de tipo caja negra y sistemas de tipo caja blanca. Los de caja negra son aquellos sistemas de testing que no se basan en la estructura interna, si no que trabajan únicamente con la entrada, sobre la que aplican una precondición, y la salida sobre la que comprueban si cumple las postcondiciones establecidas. 
+En cambio los de caja blanca no testean únicamente las entradas y salidas del programa aplicandoles precondiciones y comprobando la postcondiciones, sino que además se basan en la estructura interna del programa para realizar la generación de casos de prueba, de forma que se cubra todo el texto del programa. Según el criterio de cobertura deseado se pueden generar casos para ejercitar todas las condiciones o todas las ramas o todos los caminos.
 
-En el caso de nuestro proyecto nos decidimos por el método de caja negra pues queríamos conseguir un sistema válido para poder probar cualquier programa sin necesidad de tener que adaptar nuestra plataforma para cada nuevo programa, es decir que funcionase fuese cual fuese el programa bajo prueba. Esa es una de las desventajas del testeo de tipo caja blanca que para poder comprobar partes de la estructura interna de un programa tienes que adaptar la plataforma para cada uno de los nuevos programas.
+En el caso de nuestro proyecto nos decidimos por el método de caja negra, pues queríamos conseguir un sistema válido para poder probar cualquier programa sin necesidad de tener que adaptar nuestra plataforma para cada uno de ellos, es decir que funcionase fuese cual fuese el programa bajo prueba. Esa es una de las desventajas del testeo de tipo caja blanca, que para poder comprobar partes de la estructura interna de un programa tendríamos que adaptar la plataforma para cada uno de los nuevos programas.
 
-La idea principal detras de nuestro proyecto era principalmente la inmediatez y la comodidad del usuario, es decir que para probar un programa no necesitara escribir código extra aparte del ya existente programa si no que solo debe especificar como quiere que se generen los casos de prueba y los rangos de los dominios a usar y con eso ser ya capaz de probar su programa lo cual se ajusta mucho más a la idea de testeo de caja negra.
+La idea principal detrás de nuestro proyecto era principalmente la inmediatez y la comodidad del usuario, es decir que para probar un programa no fuera necesario escribir código extra, aparte del ya existente programa, sino que solo fuera especificar como quiere que se generen los casos de prueba y los rangos de los dominios a usar y con eso sea ya capaz de probar su programa, lo cual se ajusta mucho más a la idea de testeo de caja negra.
 
-Las posibles maneras en las que el usuario puede especificar que se generen los casos de prueba para cada argumento son 3:
-  - O generar *n* casos de prueba de manera aleatoria.
-  - O coger *n* casos de prueba de tamaño menor o igual a *m*.
-  - O coger los *n* primeros casos de prueba de la lista de todos los valores, sea cual sea su tamaño.
+Las posibles maneras en las que el usuario puede especificar como se generan los casos de prueba para cada argumento son 3:
+
+- Generar *n* casos de prueba de manera aleatoria.
+
+- Coger *n* casos de prueba de tamaño menor o igual a *m*.
+
+- Coger los *n* primeros casos de prueba de la lista de todos los valores, sea cual sea su tamaño.
 
 ### 3.2: Sized
 
-En la estructura del proyecto **\texttt{Sized}** está pensada como la clase externa que hereda de **\texttt{Allv}**. A su vez es la clase que se ocupa de a partir de la lista **\texttt{allv}** de un tipo de datos devolver la lista de los casos de prueba. Esto se realiza mediante dos funciones:
-  - **\texttt{sized}** que devuelve los **\texttt{n}** primeros casos menores o iguales a un tamaño *m*.
-  - **\texttt{smallest}** que devuelve  los **\texttt{n}** primeros casos de la lista **allv** según su posición y sin importar su tamaño.
+En la estructura del proyecto, **\texttt{Sized}** está pensada como la clase externa que hereda de **\texttt{Allv}**. A su vez es la clase que se ocupa de devolver la lista de los casos de prueba a partir de la lista **\texttt{allv}** de un tipo de datos. Esto se realiza mediante dos funciones:
 
-En esta clase del proyecto decidimos implementar el concepto de tamaño de un elemento mediante la librería **Generics** explicada anteriormente pues de esa manera podríamos tener una representación del tamaño independiente del tipo y no hay que definirlo para cada tipo nuevo creado por el usuario. (Fig 2)
+- **\texttt{sized}** que devuelve los *n* primeros casos menores o iguales a un tamaño *m*.
 
-En primer lugar debemos definir la clase externa de la parte de **Generics** que será la que nosotros usemos. En ella solo debemos definir las funciones que queremos que tenga y como se comunica con la clases internas de **Generics**. Primero definimos la funcion en si que será una lista que dada un elemento de un tipo cualquiera nos devuelva un entero que representará su tamaño.
+- **\texttt{smallest}** que devuelve  los *n* primeros casos de la lista **\texttt{allv}** según su posición y sin importar su tamaño.
 
-Despues debemos definir como se comunica la función **\texttt{size}** externa con la versión genérica **gsize** para obtener de esta el valor a devolver. En este caso usamos la función **from** que lo que hace es transformar un valor en su representación no genérica y transformarlo a su representación genérica para que pueda ser manipulado en las diferentes funciones. En este caso es simple pues el valor del tamaño obtenido por **gsize** será el mismo devuelto por nuestra función **size**. Finalmente creamos la clase interna **\texttt{GSized}** y definimos la función **\texttt{gsize}**.
+En esta clase del proyecto decidimos implementar el concepto de tamaño de un elemento mediante la librería **\texttt{Generics}** explicada anteriormente, pues de esa manera podríamos tener una representación del tamaño independiente del tipo y no hay que definirlo para cada tipo nuevo creado por el usuario. (Fig 2)
 
-Una vez tenemos la interfaz entre las dos clases **\texttt{Sized}** y **\texttt{GSized}** lo primero que debemos definir es el constructor sin argumentos que en nuestro caso devuelve el tamaño 0. A continuacion definimos**\texttt{size}** para un tipo compuesto por otros dos tipos, el tamaño de dicho tipo es la suma de los tamaños de los tipos que los componen. Tras ello definimos el comportamiento cuando el tipo tiene mas de un constructor posible, en este caso si elegimos el constructor de la derecha el tamaño del tipo será el tamaño del tipo de la derecha y similar si elegimos el tipo de la izquierda. Por último tenemos la instancia utilizada para trabajar con metainformación del tipo, que en nuestro caso al no ser necesaria dicha información simplemente llamamos de nuevo a la funcion **gsize** ignorando la metainformación.
+En primer lugar debemos definir la clase externa de la parte de **\texttt{Generics}** que será la que nosotros usemos. En ella, sólo debemos definir las funciones que queremos que tenga y como se comunica con la clases internas de **\texttt{Generics}**. Primero definimos la funcion en si, que dada un elemento de un tipo cualquiera nos devuelva un entero que representará su tamaño.
+
+Después debemos definir como se comunica la función **\texttt{size}** externa con la versión genérica **\texttt{gsize}** para obtener de esta el valor a devolver. En este caso usamos la función **\texttt{from}** recibe un valor en su representación no genérica y lo transforma a su representación genérica para que pueda ser manipulado en las diferentes funciones. En este caso es simple pues el valor del tamaño obtenido por **\texttt{gsize}** será el mismo devuelto por nuestra función **\texttt{size}**. Finalmente creamos la clase interna **\texttt{GSized}** y definimos la función **\texttt{gsize}**.
+
+Una vez tenemos la interfaz entre las dos clases **\texttt{Sized}** y **\texttt{GSized}** lo siguiente que debemos definir es el constructor sin argumentos, que en nuestro caso devuelve el tamaño 0. A continuacion definimos **\texttt{size}** para un tipo compuesto por otros dos, el tamaño de dicho tipo es la suma de los tamaños de los tipos que los componen. Tras ello definimos el comportamiento cuando el tipo tiene mas de un constructor posible, en este caso si elegimos el constructor de la derecha el tamaño del tipo será el del tipo de la derecha y similar si elegimos el constructor de la izquierda. Por último, tenemos la instancia utilizada para trabajar con la metainformación del tipo, que en nuestro caso al no ser necesaria dicha información simplemente llamamos de nuevo a la funcion **\texttt{gsize}** ignorando la metainformación.
 
 ![Clase Sized](imagenes/Sized.jpg "Clase Sized")
 
@@ -292,45 +305,56 @@ Una vez tenemos la interfaz entre las dos clases **\texttt{Sized}** y **\texttt{
 
 ### 3.3: Allv/TemplateAllv
 
-En primer lugar vamos a tratar la clase **Allv**, cuyas instancias cuentan unicamente con una función, **allv** la cual devuelve la lista de todos los posibles valores del tipo de datos. 
+En primer lugar vamos a tratar la clase **\texttt{Allv}**, cuyas instancias cuentan unicamente con una función, **\texttt{allv}** la cual devuelve la lista de todos los posibles valores del tipo de datos. 
 
-Al principio esta clase estaba pensada para ser una única clase que utilizara la librería **Generics** y para contar con un método, **compose** con el cual ser capaces de generar instancias de la clase **Allv** para los tipos definidos por el usuario. Dicha función se encargaría de crear la lista de todos los valores (**allv**) para el nuevo tipo de datos a partir de las listas de los tipos predefinidos, pero encontramos un problema a la hora de integrarlo con la clase **Sized**. La idea que teníamos sobre **Sized** era darle al usuario la posibilidad de pedir los *n* valores mas pequeños de una clase o los *n* primeros valores de tamaño menor o igual a un número prefijado por él.
-Lo cual entraba en conflicto con la manera en la que generábamos las listas de **allv** para los tipos definidos por el usuario.
+Al principio esta clase estaba pensada para ser una única clase que utilizara la librería **\texttt{Generics}** y para contar con un método, **\texttt{compose}** con el cual ser capaces de generar instancias de la clase **\texttt{Allv}** para los tipos definidos por el usuario. Dicha función se encargaría de crear la lista de todos los valores (**\texttt{allv}**) para el nuevo tipo de datos a partir de las listas de los tipos predefinidos, pero a la hora de integrarlo con la clase **\texttt{Sized}** encontramos un problema . La idea que teníamos sobre esta clase era darle al usuario la posibilidad de pedir los *n* valores mas pequeños de una clase o los *n* primeros valores de tamaño menor o igual a un número prefijado por él.
+Lo cual entraba en conflicto con la manera en la que generábamos las listas de **\texttt{allv}** para los tipos definidos por el usuario.
 Para realizar la composición de dos listas seguimos el método mostrado en la siguiente figura.
 
 //////////IMAGEN EXPLICATIVA COMPOSE///////////////////// 
 
-
 Dadas dos listas la idea es realizar el producto cartesiano de ellas siendo este el resultado de generar todas las parejas con un valor de la primera lista y otro de la segunda. Teniendo en cuenta que ambas pueden ser infinitas, dicho producto deberá ser realizado por diagonales.
-Dicha combinación de listas infinitas podía ser realizada sin problemas usando **Generics** pero el problema llegaba a la hora de querer devolver los *n* primeros valores de un tamaño menor o igual a *m* ya que para ello debíamos ordenar la lista infinita y encontramos el problema de que en dichas listas infinitas los elementos de un tamaño siempre eran infinitos y que siempre habría algun elemento a mayores de tamaño menor o igual a *m* aunque fuera despues de muchos elementos por el medio que no lo fueran. Dicho problema fue el por que tuvimos que pensar en utilizar **Template Haskell** en lugar de **Generics**.
+La combinación de listas infinitas podía ser realizada sin problemas usando **\texttt{Generics}**, pero el problema llegaba a la hora de querer devolver los *n* primeros valores de un tamaño menor o igual a *m*, ya que para ello debíamos ordenar la lista infinita y encontramos el problema de que en dichas listas infinitas el número de elementos de un tamaño siempre eran infinito y que siempre habría algún elemento a mayores de tamaño menor o igual a *m*, aunque estuviera después de muchos elementos intermedios que no lo fueran. Este problema nos hizo pensar en utilizar **\texttt{Template Haskell}** en lugar de **\texttt{Generics}**.
 
-En la versión definitiva del programa en la clase **TemplateAllv** se encuentra esta funcionalidad de crear una instancia de **Allv** para los tipos de datos definidos por el usuario utilizando para ello **TemplateAllv**, con la ayuda de la ya nombrada funciónn **compose**(Fig 4) que tiene la siguiente forma.
+En la versión definitiva del programa en la clase **\texttt{TemplateAllv}** se encuentra esta funcionalidad de crear una instancia de **\texttt{Allv}** para los tipos de datos definidos por el usuario, utilizando para ello **\texttt{gen\_allv}**, con la ayuda de la ya nombrada funciónn **\texttt{compose}**(Fig 4) que tiene la siguiente forma.
 
-**Compose** se encarga de concatenar todas las diagonales en una única lista final que es la que se devuelve mediante la función **allv**, por otro lado **diags** se encarga de crear una de las diagonales y mientras no sea la ultima diagonal volver a llamarse a si misma con los parametros para la siguiente. Los parámetros de la función **diags** son:
-  - **i** se trata del ordinal de la diagonal que vamos a generar.
-  - **xs** e **ys** se tratan de las dos listas que vamos a combinar.
+La función **\texttt{compose}** se encarga de concatenar todas las diagonales en una única lista final, que es la que se devuelve mediante la función **\texttt{allv}**, por otro lado **\texttt{diags}** se encarga de crear una de las diagonales y mientras no sea la última volver a llamarse a sí misma con los parámetros para la siguiente. Los parámetros de la función **\texttt{diags}** son:
 
-Además dentro de **\texttt{TemplateAllv}** tres funciones se encargan de crear una instancia adecuada de la clase **\texttt{Allv}** adecuada para cada uno de los tipos de datos definidos por el usuario.
+- **\texttt{i}** se trata del ordinal de la diagonal que vamos a generar.
 
-La primera de ellas y la más externa en dicho proceso es **gen_allv**(Fig 3), la cual además de llamar a **typeInfo** para extraer la información del tipo y pasarsela a las subfunciones también es donde se define como se formará exactamente la nueva función **allv** dentro de la instancia del tipo. Adjunto el código de la función **gen_allv**. 
+- **\texttt{xs}** e **\texttt{ys}** se tratan de las dos listas que vamos a combinar.
 
-Vamos a echar un vistazo mas de cerca a dicha función **gen_body** dentro de la clausula **where** y al tipo de comprobaciones o analisis sobre el tipo que realiza. En primer lugar nombrar lo que significa cada una de las cuatro listas que recibe como parámetro dicha función:
-  - La primera de ellas contiene los números de parámetros de cada uno de los diferentes constructores.
-  - La segunda contiene los nombres de los diferentes constructores.
-  - La tercera una lista de nombres de **f's** entre **f~1~** y **f~n~** siendo *n* el número de constructores distintos para el tipo de datos.
-**Gen_body** se encarga de analizar el número de parámetros de cada uno de los constructores ya que si cuenta con un único parámetro, se puede utilizar el nombre del propio constructor sin ningún problema pero en caso de tener más de un parámetro debido a que compose devuelve la lista compuesta como una lista de tuplas, es necesario utilizar una función auxiliar **f** para realizar la aplicación del constructor sobre los elementos de la tupla en lugar de sobre la tupla en si.
-Aparte de esto **gen_body** se encarga de utilizando **Template Haskell** conseguir juntar todas las partes que fueron en parte preprocesadas en **gen_clause**
+Además, dentro de **\texttt{TemplateAllv}** existen tres funciones que se encargan de crear una instancia adecuada de la clase **\texttt{Allv}** para cada uno de los tipos de datos definidos por el usuario.
 
-La siguiente función a tratar, **gen_instance**(Fig 5) se encarga únicamente de crear una instancia de la clase **Allv** para el nuevo tipo de datos (parámetro **for_type**) y adjuntar a dicha instancia la definición de la función **allv** que se crea en **gen_clause**. Adjunto el código de **gen_instance**
+La primera de ellas, y la más externa en dicho proceso es **\texttt{gen\_allv}**(Fig 3), la cual además de llamar a **\texttt{typeInfo}** para extraer la información del tipo y pasarsela a las subfunciones, es también en la que se define, dentro de **\texttt{gen\_body}**, como se formará exactamente la nueva función **\texttt{allv}** para la instancia del tipo.
+
+A continuación vamos a analizar con más profundidad la función **\texttt{gen\_body}** dentro de la cláusula **\texttt{where}** y el tipo de comprobaciones y análisis sobre el tipo que se realiza. En primer lugar indicar lo que significa cada una de las tres listas que recibe como parámetro dicha función:
+
+- La primera de ellas contiene los números de parámetros de cada uno de los diferentes constructores.
+
+- La segunda contiene los nombres de los diferentes constructores.
+
+- La tercera una lista de nombres de *f's* entre *f~1~* y *f~n~* siendo *n* el número de constructores distintos para el tipo de datos.
+
+La función **\texttt{gen\_body}** se encarga de analizar el número de parámetros de cada uno de los constructores, ya que si cuenta con un único parámetro se puede utilizar el nombre del propio constructor sin ningún problema, pero en caso de tener más de un parámetro, debido a que compose devuelve la lista compuesta como una lista de tuplas, es necesario utilizar una función auxiliar **\texttt{f}** para realizar la aplicación del constructor sobre los elementos de la tupla en lugar de sobre la propia tupla.
+Aparte de esto **\texttt{gen\_body}** se encarga de conseguir juntar todas las partes que fueron preprocesadas en **\texttt{gen\_clause}** utilizando **\texttt{Template Haskell}**.
+
+La siguiente función a tratar, **\texttt{gen\_instance}** (Fig 5) se encarga de crear una instancia de la clase **\texttt{Allv}** para el nuevo tipo de datos (parámetro **\texttt{for\_type}**) y adjuntar a dicha instancia la definición de la función **\texttt{allv}** que se crea en **\texttt{gen\_clause}**.
 
 
-Por último tenemos la función **gen_clause**(Fig 6) que se encarga de crear la definición de la función **allv** para el tipo de datos, usando para ello la función **gen_body** que había sido definida anteriormente en **gen_allv**.
-Además cuenta con una serie de funciones auxiliares que realizan parte del procesamiento:
-  - **listOfFOut** se encarga de crear la lista de nombres de variables entre **f~1~** y **f~n~** para aquellos casos en los cuales los constructores tienen más de un parámetro.
-  - **isRec** devuelve una lista de booleanos en la cual cada posición indica si el constructor en dicha posición es recursivo o no.
-  - **reorderL** se encarga de reordenar los constructores (lo cual es equivalente a las listas con la información por cada constructor) de manera que queden en primer lugar aquellos que no son recursivo y al final los que si lo son. Esto es necesario ya que los constructores recursivos harán uso de aquellos que no lo son y por ello los no recursivos deben definirse en primer lugar.
-  - **gen_wheres** que se encargará de definir las clausulas where necesarias para todos aquellos constructores con más de un parámetro que necesiten utilizar una función auxiliar (que son las representadas por las **f's**).
-  - **tupleParam** crea las tuplas de parámetros para cada una de las funciones auxiliares **f**.
+Por último tenemos la función **\texttt{gen\_clause}** (Fig 6) que es responsable de crear la definición de la función **\texttt{allv}** para el tipo de datos, usando para ello la función **\texttt{gen\_body}** que había sido definida anteriormente en **\texttt{gen\_allv}**.
+Además, cuenta con una serie de funciones auxiliares que realizan parte del procesamiento:
+
+- **\texttt{listOfFOut}** se encarga de crear la lista de nombres de variables entre *f~1~* y *f~n~* para aquellos casos en los cuales los constructores tienen más de un parámetro.
+
+- **\texttt{isRec}** devuelve una lista de booleanos en la cual cada posición indica si el constructor en dicha posición es recursivo o no.
+
+- **\texttt{reorderL}** sirve para reordenar los constructores (lo cual es equivalente a las listas con la información por cada constructor) de manera que queden en primer lugar aquellos que no son recursivo y al final los que si lo son. Esto es necesario, ya que los constructores recursivos harán uso de aquellos que no lo son y por ello los no recursivos deben definirse en primer lugar.
+
+- **\texttt{gen\_wheres}** que es responsable
+ de definir las clausulas where necesarias para todos aquellos constructores con más de un parámetro que necesiten utilizar una función auxiliar (que son las representadas por las *f's*).
+
+- **\texttt{tupleParam}** crea las tuplas de parámetros para cada una de las funciones auxiliares **\texttt{f}**.
 
 
 ![Función gen_allv](imagenes/genAllv.jpg "Función gen_allv")
@@ -345,11 +369,10 @@ Además cuenta con una serie de funciones auxiliares que realizan parte del proc
 
 ### 3.4: Arbitrary
 
-
 ### 3.5: Instancias predefinidas
-En este último apartado vamos a repasar las instancias dentro de las clases **Sized** y **Allv** para los tres tipos básicos (**Int**, **Char**y **Bool**) y para los tipos que se deducen directamente de ellos como es el caso de listas de cualquier tipo ya instanciado en dichas clases o las tuplas de hasta longitud 6.
+En este último apartado vamos a repasar las instancias dentro de las clases **\texttt{Sized}** y **\texttt{Allv}** para los tres tipos básicos (**\texttt{Int}**, **\texttt{Char}**y **\texttt{Bool}**) y para los tipos que se deducen directamente de ellos, como es el caso de listas de cualquier tipo ya instanciado en dichas clases o las tuplas de hasta longitud 6.
 
-Adjunto el código donde se instancian dichos tipos en las dos clases que se encuentran en el archivo **Sized.hs**.
+Adjunto el código donde se instancian dichos tipos en las dos clases que se encuentran en el módulo **\texttt{Sized}**.
 ```haskell
   instance Sized Int where
     size x = 1
@@ -370,9 +393,11 @@ Adjunto el código donde se instancian dichos tipos en las dos clases que se enc
      allv = [True, False]
 ```
 
-Como podemos observar en el caso de la instancia en la clase **Sized** cualquier elemento de uno de los tres tipos tendrá tamaño uno. En el caso de las instancias de los tres tipos en la clase **Allv** simplemente debemos indicar el conjunto de valores de dicha clase que serán elegibles a la hora de generar casos de prueba.
+Como podemos observar en el caso de la instancia en la clase **\texttt{Sized}**, cualquier elemento de uno de los tres tipos tendrá tamaño uno. En el caso de las instancias de los tres tipos en la clase **\texttt{Allv}**, simplemente debemos indicar el conjunto de valores de dicha clase que serán elegibles a la hora de generar casos de prueba.
 
-A continuación nos encontramos con las instancias derivadas de tipos ya definidos en Allv.
+A continuación mostramos con las instancias derivadas de tipos ya definidos en **\texttt{Allv}**.
+
+/////Añadir lista
 
 ```haskell
   instance Allv a => Allv [a] where
@@ -393,42 +418,56 @@ A continuación nos encontramos con las instancias derivadas de tipos ya definid
   instance (Allv a, Allv b, Allv c, Allv d, Allv e, Allv f) => Allv (a,(b,(c,(d,(e,f))))) where
      allv = compose allv (compose allv (compose allv (compose allv (compose allv allv))))
 ```
-Para las cuales utilizamos la función de **compose** explicada con anterioridad.
+Para las cuales utilizamos la función de **\texttt{compose}** explicada con anterioridad.
 
-En el caso de las instancias derivadas dentro de la clase Sized nos encontramos que estas se generan mediante generics.
+En el caso de las instancias derivadas dentro de la clase **\texttt{Sized}** éstas se generan mediante **\texttt{Generics}**.
 
-Estaba tambien pensado incluir dentro del archivo **Arbitrary.hs** las instancias de estos tres tipos y las instancias derivadas a partir de ellos para la clase Arbitrary, pero por falta de tiempo se decidió centrarse en la parte de Sized.
+También habíamos pensado incluir dentro del módulo **\texttt{Arbitrary}** las instancias de estos tres tipos y las derivadas a partir de ellos para la clase **\texttt{Arbitrary}**, pero por falta de tiempo decidimos centrarnos en la parte de **\texttt{Sized}**.
 
 \pagebreak
 
 # 4. El generador de casos
 
 ### 4.1: La interfaz con la UUT
-La interfaz de mi programa con la unidad bajo testeo (UUT a partir de ahora) se encuentra en el archivo UUT.hs(Figura x), dicho archivo es diferente para cada función que vayamos a probar y contiene la información mínima necesaria para poder hacer todas las pruebas. Ademas dicho archivo se genera automáticamente para cada función que vayamos a probar mediante la IR2Haskell, que se encarga de traducir la representacion de la IR a codigo Haskell.
-La información presente en la UUT es:
-- En primer lugar una función uutNargs que devuelve un entero y que indica el número de argumentos que tiene la función que vamos a probar.
-- En segundo lugar **\texttt{uutMethods}** que contiene los nombres de las tres funciones que tendremos que utilizar en el proceso ( precondicion, funcion y postcondicion).
--A continuacion la precondicion en este caso **\texttt{uutPrec}**, la funcion **\texttt{uutMethod}** y postcondicion **\texttt{uutPost}**. Estas tres funciones serán las que guien todo el proceso de prueba de la función para la lista de casos generados.
+La interfaz de nuestro programa con la unidad bajo testeo (a partir de ahora UUT siglas correspondientes *Unit Under Testing*) se encuentra dentro del módulo **\texttt{UUT}** (Figura x), dicho módulo es diferente para cada función a probar y contiene la información mínima necesaria para poder hacer todas las pruebas. Además, es generado automáticamente para cada función que vayamos a probar mediante la *IR2Haskell*, que se encarga de traducir la representación de la IR a código Haskell.
+La información presente en la **\texttt{UUT}** es:
+
+- En primer lugar una función **\texttt{uutNargs}**, que devuelve un entero y que indica el número de argumentos de la función que vamos a probar.
+
+- En segundo lugar **\texttt{uutMethods}**, que contiene los nombres de las tres funciones que utilizaremos en el proceso (precondición, función y postcondición).
+
+-A continuación la precondición en este caso **\texttt{uutPrec}**, la función **\texttt{uutMethod}** y postcondición **\texttt{uutPost}**. Estas tres funciones serán las que guien todo el proceso de prueba de la función para la lista de casos generados.
 
 ![Clase UUT](imagenes/UUT.jpg "Clase UUT")
 
-### 4.2: La obtencion del tipo de la UUT
-Dentro del programa, una de las partes importantes y la principal por la cual Template Haskell resultó de gran utilidad para el proyecto es poder analizar los tipos de las funciones y adaptar el generador de casos a ellos, tanto si son tipos predefinidos, como si son tipos definidos por el usuario.
+\pagebreak
 
-Dentro de **\texttt{TemplateAllv}** se encuentra la funcion  **\texttt{typeInfo}** (Figura x)  que se encarga de extraer y sintetizar la información sobre un tipo declarado por el usuario. Se trata de una función que recibe como parametro una variable del tipo **DecQ** y devuelve una tupla dentro de la monada **Q** con la siguiente información:
-  - En primer lugar el nombre simplificado del tipo del cual vamos a realizar la instancia, refiriendome con simplificado a quitar toda la parte del nombre que se refiere a la estructura de módulos de la cual se hereda dicho tipo. Por ejemplo si crearamos una instacia para el tipo **Integer** del módulo **Prelude** el nombre del tipo sin simplificar sería **Prelude.Integer** y una vez simplificado simplemente **Integer**. Dicho nombre se trata de una variable de tipo **Name**, que es la manera en la que se maneja el tipo **String** en **TH** para todo tipo de nombres.
-  - El segundo se trata del nombre del tipo sin simplificar, devuelto tambien como una variable de tipo **Name**.
-  - El tercero es una lista de enteros para cada uno de los diferentes constructores del tipo. Los enteros expresan el número de argumentos de cada uno de uno de los constructores.
-  - El cuarto se trata de una lista de los diferentes nombres de los constructores de tipo. Se trata de una lista de tipo **Name**
-  - El último se trata de una lista de listas. Cada una de las listas internas contiene los tipos para uno de los constructores del tipo.
+### 4.2: La obtención del tipo de la UUT
+Una de las partes más importantes dentro del programa, y la principal causa por la que **\texttt{Template Haskell}** resultó de gran utilidad para el proyecto, es su facultad para analizar los tipos de las funciones y adaptar el generador de casos a ellos, tanto si son tipos predefinidos, como si son definidos por el usuario.
+
+Dentro de **\texttt{TemplateAllv}** se encuentra la funcion  **\texttt{typeInfo}** (Figura x)  que cuyo papel es extraer y sintetizar la información sobre un tipo declarado por el usuario. Esta función recibe como parámetro una variable del tipo **\texttt{DecQ}** y devuelve una tupla dentro de la monada **\texttt{Q}** con la siguiente información:
+
+- En primer lugar el nombre simplificado del tipo del cual vamos a realizar la instancia, considerado simplificado a quitar toda la parte del nombre que se refiere a la estructura de módulos de la cual se hereda dicho tipo. Por ejemplo si crearamos una instacia para el tipo **\texttt{Integer}** del módulo **\texttt{Prelude}** el nombre del tipo sin simplificar sería **\texttt{Prelude.Integer}** y una vez simplificado simplemente **\texttt{Integer}**. Dicho nombre se trata de una variable de tipo **\texttt{Name}**, que es la manera en la que se maneja el tipo **\texttt{String}** en **\texttt{TH}** para los nombres.
+
+- El segundo es el nombre del tipo sin simplificar, devuelto también como una variable de tipo **\texttt{Name}**.
+
+- El tercero es una lista de enteros para cada uno de los diferentes constructores del tipo. Los enteros expresan el número de argumentos de cada uno de los constructores.
+
+- El cuarto es una lista con los diferentes nombres de los constructores de tipo, siendo una lista de tipo **\texttt{Name}**
+
+- El último es una lista de listas. Las listas internas contiene los tipos para uno de los constructores del tipo.
 
 
-El otro gran punto en el cual necesitamos analizar el tipo de las funciones es a la hora de crear los casos de prueba, y de ello se encarga la función **\texttt{get\_f\_inp\_types}** la cual que dada una **\texttt{String}** que será el nombre de una función nos devuelve una lista con los tipos de entrada de dicha funcion en forma de lista de **\texttt{Strings}**.
-Esta funcion consta de 4 pasos o llamadas a otras funciones auxiliares(Figuras x y x+1):
-  - En primer lookupValueName, que es una funcion de la libreria **\texttt{Template Haskell}** y que lo que hace es dado una String que será el nombre de una funcion nos devuelve el Name asociado a ella dentro del namespace actual.
-  - La segunda función se trata de extract_info, la cual recibe como entrada un InfoQ el cual es un tipo que se usa dentro de Template Haskell para encapsular información como por ejemplo en este caso la información devuelta por el reify del Name de la función. A partir de ello extract_info nos devolvera el nombre de la funcion sin el prefijo del modulo, el nombre de la función con el prefijo y por último el tipo de la función en forma prefija.
-  - En tercer lugar simplifyParsing que recibe como entrada el tipo de una función en forma prefija y lo transforma a forma infija, que es la manera en el que indicamos por ejemplo en tipo de la función cuando lo ponemos explícitamente en Haskell.
-  - Finalmente la ultima función extract_types se encarga de transformar el tipo de la función en forma infija a una lista con los tipos de entrada de la misma, ignorando el tipo de salida.
+A la hora de crear los casos de prueba necesitamos analizar el tipo de las funciones, de lo que se encarga la función **\texttt{get\_f\_inp\_types}**, la cual dada una **\texttt{String}**, que será el nombre de una función, nos devuelve una lista con los tipos de entrada de dicha función en forma de lista de **\texttt{Strings}**.
+Esta funcion consta de 4 pasos o llamadas a otras funciones auxiliares (Figuras x y x+1):
+
+- En primer lugar **\texttt{lookupValueName}**, que es una funcion de la libreria **\texttt{Template Haskell}**, que dada una **\texttt{String}** como entrada, que será el nombre de una funcion, nos devuelve el **\texttt{Name}** asociado a ella dentro del namespace actual.
+
+- La segunda función es **\texttt{extract\_info}**, la cual recibe como entrada un parámetro de tipo **\texttt{InfoQ}**, el cual se usa dentro de **\texttt{Template Haskell}** para encapsular información, como en este caso la información devuelta por el **\texttt{reify}** del **\texttt{Name}** de la función. A partir de ello **\texttt{extract\_info}** nos devolverá el nombre de la funcion sin el prefijo del módulo, el nombre de la función con el prefijo y, por último, el tipo de la función en forma prefija.
+
+- En tercer lugar **\texttt{simplifyParsing}** que recibe como entrada el tipo de una función en forma prefija y lo transforma a forma infija, que es la manera en el que indicamos el tipo de la función, cuando lo ponemos explícitamente en Haskell.
+
+- Finalmente la función **\texttt{extract\_types}** se encarga de transformar el tipo de la función en forma infija a una lista con los tipos de entrada de la misma, ignorando el tipo de salida.
 
 ![Función typeInfo](imagenes/typeInfo.jpg "Función typeInfo")
 
@@ -436,40 +475,45 @@ Esta funcion consta de 4 pasos o llamadas a otras funciones auxiliares(Figuras x
 
 ![Funcion get_f_inp_types y auxiliares cont](imagenes/getFInpTypes2.jpg "Funcion get_f_inp_types y auxiliares cont")
 
+\pagebreak
 
 ### 4.3 La generación de instancias de Allv y Arbitrary
-Tras obtener la lista de tipos de datos que se utilizan en la función que no estan definidos por defecto (lo cual corresponde con la segunda parte del apartado anterior) deberemos crear instancias en las dos clases **\texttt{Allv}** y **\texttt{Arbitrary}** para dichos tipos. Dicha generación de instancias se realiza mediante **\texttt{Template Haskell}** dentro de la clase **\texttt{UUTReader}**
-mediante el codigo mostrado en la Figura x.
+Tras obtener la lista de tipos de datos que se utilizan en la función no definidos por defecto (lo cual corresponde con la segunda parte del apartado anterior) deberemos crear instancias en las dos clases **\texttt{Allv}** y **\texttt{Arbitrary}** para dichos tipos. La generación de instancias se realiza mediante **\texttt{Template Haskell}** dentro de la clase **\texttt{UUTReader}** (Figura x))
 
-En dicho código realizamos una llamada a las funciones **\texttt{gen\_allv\_str\_list}** y **\texttt{gen\_arbitrary\_str\_listQ}** de las clases **\texttt{TemplateAllv}** y **\texttt{TemplateArbitrary}** respectivamente. Ambas funciones reciben como párametro una lista de Strings que contiene todos los nombres de los tipos definidos por el usuario y a partir de ella crean instancias para cada uno de dichos tipos en la clase a la que esta dirigida cada función.
+En nuestro código realizamos una llamada a las funciones **\texttt{gen\_allv\_str\_list}** y **\texttt{gen\_arbitrary\_str\_listQ}** de las clases **\texttt{TemplateAllv}** y **\texttt{TemplateArbitrary}**, respectivamente. Ambas funciones reciben como párametro una lista de **\texttt{Strings}** que contiene todos los nombres de los tipos definidos por el usuario y a partir de ella crean instancias para cada uno en la clase a la que está dirigida cada función. (**\texttt{Allv}** y **\texttt{Arbitrary}**)
 
-Dicha lista de tipos definidos por el usuario se calcula en primer lugar hayando los tipos de los datos de la precondición y despues sobre dicha lista de tipos de entrada aplicando la función **\texttt{notDefTypesQMonad}** la cual filtra cuales de ellos no son instancias predefinidas.(Figura x).
+La lista de tipos definidos por el usuario se calcula, hayando en primer lugar los tipos de los datos de la precondición y posteriormente, sobre dicha lista de tipos de entrada, aplicando la función **\texttt{notDefTypesQMonad}**, que filtra cuales de ellos no son instancias predefinidas.(Figura x).
 
-Analizando dicha función y sus auxiliares podemos observar que se tratan de una funciones relativamente simples, ya que **\texttt{notDefTypesQMonad}** se encarga de simplemente de lidiar con la monada Q y pasar la lista fuera de la monada a **\texttt{notDefTypes}**. En segundo lugar **\texttt{notDefTypes}** se encarga de pasarle dichos tipos uno a uno a **\texttt{isUserDef}**, pero se los pasa simplificados, lo cual significa tratar igual las listas de un tipo que el tipo en si, ya que si las instancias para un tipo están definidas en las instancias base tambien lo estarán para las listas de dicho tipo. Por último **\texttt{isUserDef}** simplemente se encarga de ver si el tipo simplificado es o no **\texttt{Int}**, **\texttt{Char}**, o **\texttt{Bool}** que son los tres tipos que cuentan con instancia predefinida y si no es ninguno de ellos devolverá **\texttt{True}**, ya que se trata de un tipo definido por el usuario.
+Analizando dicha función y sus auxiliares podemos observar que son funciones relativamente simples, ya que **\texttt{notDefTypesQMonad}** se encarga de simplemente de lidiar con la mónada Q y pasar la lista fuera de la mónada a **\texttt{notDefTypes}**. En segundo lugar **\texttt{notDefTypes}** simplifica dichos tipos y se los pasa uno a uno a **\texttt{isUserDef}**, lo cual supone tratar igual las listas de un tipo que el tipo, ya que si las instancias para un tipo están definidas en las instancias base también lo estarán para las listas de dicho tipo. Por último, **\texttt{isUserDef}** se encarga simplemente de determinar si el tipo simplificado es **\texttt{Int}**, **\texttt{Char}** o **\texttt{Boolean}**, que son los tres que cuentan con instancia predefinida y si no coincide con ninguno de ellos devolverá **\texttt{True}**, al tratarse de un tipo definido por el usuario.
 
 ![Call to the generator functions](imagenes/gens.jpg "Call to the generator functions")
 
 ![Función notDefTypesQMonad y auxiliares](imagenes/notDefTypes_andAuxs.jpg "Función notDefTypesQMonad y auxiliares")
 
+\pagebreak
+
 ### 4.4: La generación y ejecución de casos
-La ejecución de los casos de prueba se realiza desde la función **\texttt{test_UUT}** la cual simplemente se encarga de llamar a **\texttt{test}**.
+La ejecución de los casos de prueba se realiza a través de la función **\texttt{test\_UUT}** que se encarga simplemente de llamar a **\texttt{test}**.
 
-Dicha función **\texttt{test}** es donde llamaremos a la función **\texttt{prueba}** sobre el conjunto de casos de prueba, que en esta versión se generará siempre mediante la función **\texttt{smallest}** que como podemos ver es llamada dentro de la cláusula where de **\texttt{test}**. Como previamente hemos creado instancias de las clases **\texttt{Allv}** y **\texttt{Arbitrary}** para todos los tipos definidos por el usuario sabemos que esta llamada será posible sea cual sea el tipo de los datos (Figura x).
+Desde **\texttt{test}** llamaremos a la función **\texttt{prueba}** sobre el conjunto de casos, que en esta versión se generará siempre mediante la función **\texttt{smallest}**, llamada dentro de la cláusula where de **\texttt{test}**. Al haber creado previamente las instancias de las clases **\texttt{Allv}** y **\texttt{Arbitrary}** para todos los tipos definidos por el usuario sabemos que esta llamada será posible independientemente el tipo de los datos (Figura x).
 
-Tras esto veamos la función **\texttt{prueba}** y a sus funciones auxiliares.
+Tras esto expondremos la función **\texttt{prueba}** y a sus funciones auxiliares.
  
- **\texttt{prueba}** recibe como parámetro la lista de todos los casos de prueba generados y devuelve una lista de booleanos que indica cuales de los casos probados pasaron la postcondición y cuales no. Para ello en un primer lugar filtra los casos para ver cuales de ellos cumplen la precondición establecida usando **\texttt{filtered\_pre}** y aplica la funcion **\texttt{output}** sobre esos input que pasaron la precondición para saber cuales son las salidas correspondientes a dichas entradas. Tras ello llama a la función **\texttt{pos\_f}** con los resultados de las dos anteriores como parámetros para calcular la lista de los casos que habiendo pasado la precondición también cumplen la postcondición. (Figura x)
+ La función **\texttt{prueba}** recibe como parámetro la lista de todos los casos de prueba generados y devuelve una lista de booleanos que indica cuales de ellos pasaron la postcondición y cuales no. Para ello en un primer lugar filtra los casos para ver los que cumplen la precondición establecida usando **\texttt{filtered\_pre}** y aplica la funcion **\texttt{output}** sobre los que pasaron la precondición para saber las salidas correspondientes a dichas entradas. Tras ello, llama a la función **\texttt{pos\_f}**, utilizando como parámetros los resultados de las dos anteriores para calcular la lista de los casos que, habiendo pasado la precondición, también cumplen la postcondición. (Figura x)
  
- A su vez tenemos tres funciones auxiliares de **\texttt{prueba}** que son **\texttt{pre\_f}**, **\texttt{fun\_f}** y **\texttt{pos\_f}** las cuales se encargan respectivamente de llamar a la precondición la función y la postcondición bajo prueba. (Figura x)
-  - La primera, **\texttt{pre\_f}** se trata de un **\texttt{filter}** de sobre todos los casos de prueba utilizando para ello la función **\texttt{prec\_f\_aux}** la cual se explicará más adelante.
-  - La segunda, **\texttt{fun\_f}** se encarga de mapear la función **\texttt{fun\_f\_aux}** sobre cada uno de los casos de prueba para conseguir la lista de outputs. Dicha función auxiliar tambien se explicará a continuación.
-  - La tercera **\texttt{pos\_f}** se encarga de llamar a la función **\texttt{pos\_f\_aux}** sobre dos valores el primero de ellos un input de la lista de aquellos que cumplen la precondición y el segundo el output obtenido al ejecutar la función con dicho input lo cual nos devolverá un booleano indicando si dicho caso pasa o no la postcondición. La función **\texttt{pos\_f}** también será explicada a continuación.
+ A su vez tenemos tres funciones auxiliares de **\texttt{prueba}** que son: **\texttt{pre\_f}**, **\texttt{fun\_f}** y **\texttt{pos\_f}**, que se encargarán respectivamente de llamar a la precondición, la función y la postcondición bajo prueba. (Figura x)
 
-Las tres funciones nombradas anteriormente **\texttt{prec\_f\_aux}**, **\texttt{fun\_f\_aux}** y **\texttt{pos\_f\_aux}** (Figura x) utilizan están construidas utilizando Template Haskell ya que deben de adaptarse al número de parámetros que tenga la función bajo prueba. Se puede observar que para las dos primeras su único parámetro es el siguiente splice **\texttt{$(linkedTupleP uutNargs)}** el cual representa un patrón de una tupla de tamaño variable. La tercera función cuenta ademas con un segundo parámetro **\texttt{$(varP $ mkName "o")}** que siempre será un elemento único y será el output correspondiente a la tupla de su primer parámetro
+ - La primera, **\texttt{pre\_f}** es un **\texttt{filter}** que actua sobre todos los casos de prueba utilizando para ello la función **\texttt{prec\_f\_aux}** que se explicará más adelante.
 
-Las dos primeras de estas tres funciones simplemente se ocupan de aplicar respectivamente las funciones **\texttt{uutPrec}** y **\texttt{uutMethod}** sobre todos los parámetros que ellas reciben encapsulados dentro de la tupla. La tercera de ellas aplica la función **\texttt{uutPost}** ambos sobre todos los parámetros que recibe encapsulados en la tupla y también sobre su segundo parámetro (correspondiente al output).
+- La segunda, **\texttt{fun\_f}** se encarga de mapear la función **\texttt{fun\_f\_aux}** sobre cada uno de los casos de prueba para conseguir la lista de outputs. Dicha función auxiliar tambien se explicará posteriormente.
 
-Por último vamos a echarle un vistazo a la función auxiliar **\texttt{linkedTupleP}** (Figura x). Esta se encarga de recibir un entero que se trata de el numero de parámetros y generar un patrón que sea una tupla de ese tamaño (Devuelve un PatQ pues es la manera de representar los patrones en Template Haskell).
+- La tercera **\texttt{pos\_f}** llama a la función **\texttt{pos\_f\_aux}** sobre dos valores, el primero de ellos un input de la lista de casos de prueba que cumplen la precondición y el segundo el output obtenido al ejecutar la función con dicho input, que nos devolverá un booleano indicando si dicho caso cumple o no la postcondición. La función **\texttt{pos\_f}** también será explicada a continuación.
+
+Las tres funciones nombradas **\texttt{prec\_f\_aux}**, **\texttt{fun\_f\_aux}** y **\texttt{pos\_f\_aux}** (Figura x) están construidas utilizando **\texttt{Template Haskell}**, ya que deben de adaptarse al número de parámetros que tenga la función bajo prueba. Podemos observar que en el caso de las dos primeras su único parámetro es el siguiente splice, **\texttt{\$(linkedTupleP uutNargs)}** el cual representa un patrón de una tupla de tamaño variable, dependiendete del número de argumentos que tenga la función bajo prueba. La tercera función cuenta ademas con un segundo parámetro **\texttt{$(varP $ mkName "o")}** que será siempre un elemento único y el output correspondiente a la tupla de su primer parámetro
+
+Las dos primeras se ocupan simplemente de aplicar respectivamente las funciones **\texttt{uutPrec}** y **\texttt{uutMethod}** sobre todos los parámetros que reciben encapsulados dentro de la tupla. La tercera aplica la función **\texttt{uutPost}** sobre todos los parámetros que recibe encapsulados en la tupla y también sobre su segundo parámetro (correspondiente al output).
+
+Por último explicaremos la función auxiliar **\texttt{linkedTupleP}** (Figura x). Ésta se encarga de recibir un entero, que se trata de el número de parámetros, y generar un patrón que sea una tupla de ese mismo tamaño (Devuelve un PatQ pues es la manera de representar los patrones en Template Haskell).
 
 ![test_UUT and test funcions](imagenes/test_UUT.jpg "test_UUT and test funcions")
 
@@ -487,60 +531,62 @@ Por último vamos a echarle un vistazo a la función auxiliar **\texttt{linkedTu
 
 ### 6.1: Korat
 
-La primera de las herramientas que vamos a tratar en este apartado se trata de **Korat** [@korat], una extensión de Java que sirve para la generación de casos complejos de prueba a partir de unas restricciones dadas.
+La primera de las herramientas que vamos a tratar en este apartado es **Korat** [@korat], una herramienta de Java que sirve para la generación de casos complejos de prueba a partir de unas restricciones dadas.
 
-La idea detras de **Korat** es que dado un predicado en Java y una función **finitialization** en la cual definimos los dominios para cada uno de las clases del input, es decir los valores válidos para cada una de ellas. **Korat** explora el espacio de estados de las posibles soluciones pero generando solo soluciones no-isomorficas entre si, consiguiendo de esta manera una gran poda de las soluciones no interesantes del espacio de búsqueda.
+La idea detrás de **Korat** es que dado un predicado en Java y una función **\texttt{finitialization}** en la cual definimos los dominios para cada una de las clases del input, es decir los valores válidos para cada una de ellas, explora el espacio de estados de las posibles soluciones generando sólo soluciones no-isomorficas entre si, de esta manera consigue una gran poda de las soluciones no interesantes del espacio de búsqueda.
 
-Lo primero que hace **Korat** es reservar el espacio necesario para los objetos especificados por ejemplo en el caso de un **BinTree** reservaria espacio para él y para el número de Nodos que queramos. Por ejemplo si queremos un arbol con tres nodos el vector contendría 8 campos:
-* 2 para el **BinTree** (uno para la raíz y otro para el tamaño)
-* 2 campos por cada uno de los 3 nodos (hijo izquierdo/hijo derecho)
+Lo primero que hace **Korat** es reservar el espacio necesario para los objetos especificados, en el caso de un **\texttt{BinTree}** reservaria espacio para él y para el número de Nodos que queramos. Por ejemplo, si queremos un arbol con tres nodos el vector contendría 8 campos:
 
-Cada uno de los posibles candidatos que considere **Korat** a partir de ese momento será una evaluación de esos 8 campos. Por lo tanto el espacio de estados de búsqueda del input consiste en todas las posibles combinaciones de esos campos, donde cada uno de ellos toma valores de su dominio definido en **finitialization**
+- 2 para el **\texttt{BinTree}** (uno para la raíz y otro para el tamaño).
+
+- 2 campos por cada uno de los 3 nodos (hijo izquierdo/hijo derecho).
+
+Cada uno de los posibles candidatos que considere **Korat** a partir de ese momento será una evaluación de esos 8 campos. Por lo tanto el espacio de estados de búsqueda del input consiste en todas las posibles combinaciones de esos campos, donde cada uno de ellos toma valores de su dominio definido en **\texttt{finitialization}**
 
 
-Para conseguir explorar de manera sistemática y completa el espacio de estados **Korat** ordena todos los elementos en los dominios de las clases y los dominios de los campos. Dicho orden de cada uno de los dominios de los campos será consistente con el orden del dominio de la clase y todos los valores que pertenezcan al mismo dominio de clase ocurriran de manera consecutiva en el dominio del campo. Tras esto representa cada candidato de la entrada como un vector de índices de sus correspondientes dominios de campos.
+Para conseguir explorar de manera sistemática y completa el espacio de estados, **Korat** ordena todos los elementos en los dominios de las clases y los dominios de los campos. Dicho orden dentro de cada uno de los dominios de los campos será consistente con el del dominio de la clase y todos los valores que pertenezcan al mismo dominio de clase ocurriran de manera consecutiva en el dominio del campo. Tras esto, cada candidato de la entrada se respresenta como un vector de índices de sus correspondientes dominios de campos.
 
-Tras definir los dominios de cada uno de los campos del vector la busqueda comienza con la inicialización de todos los indices del vector a 0. Tras ello para cada posible candidato fijamos los valores de los campos de acuerdo a los valores en el vector y acto seguido invoca a la funcion **repOk** que es donde el usuario ha definido la precondición de la función. Durante dicha ejecución **Korat** monitoriza en que orden son accedidos los campos del vector y construye una lista con los identificadores de los campos, ordenados por la primera vez en que **repOk** los accede.
+Tras definir los dominios de cada uno de los campos del vector comienza la busqueda con la inicialización a 0 de todos los indices del vector. A continuación fijamos los valores de los campos para cada posible candidato de acuerdo a los valores en el vector y acto seguido invoca a la funcion **\texttt{repOk}** que es donde el usuario ha definido la precondición. Durante dicha ejecución **Korat** monitoriza el orden en que son accedidos los campos del vector y construye una lista con los identificadores de los campos, ordenados por la primera vez en que **\texttt{repOk}** los accede.
 
-Cuando **repOk** retorna **Korat** genera el siguiente candidato incrementando el indice del dominio de campo para el campo que se encuentra último en la lista ordenada construida previamente. Si dicho indice es mayor que el tamaño del dominio de su campo este se pone a cero y se incrementa el indice de la posición anterior y así repetidamente. Al seguir este método para generar el siguiente candidato conseguiremos podar un gran numero de los candidatos que tienen la misma evaluación parcial sin dejar fuera ninguno válido.
+Cuando **\texttt{repOk}** retorna **Korat** genera el siguiente candidato incrementando el índice del dominio de campo para el campo que se encuentra último en la lista ordenada construida previamente. Si dicho índice es mayor que el tamaño del dominio de su campo, este se pone a cero y se incrementa el índice de la posición anterior y así sucesivamente. Al seguir este método para generar el siguiente candidato conseguiremos podar un gran número de ellos que tienen la misma evaluación parcial sin dejar fuera ninguno válido.
 
-El algoritmo de busqueda descrito aquí genera las entradas en orden lexicográfico. Además para los casos en los que **repOk** no es determinista este método garantiza que todos los candidatos para los que **repOk** devuelve true son generados, los casos para los que siempre devuelve false nunca son generados y los casos para los que alguna vez se devuelve true y a veces false pueden ser o no generados.
+El algoritmo de busqueda descrito aquí genera las entradas en orden lexicográfico. Además, para los casos en los que **\texttt{repOk}** no es determinista, este método garantiza que son generados todos los candidatos para los que **\texttt{repOk}** devuelve True. Los casos para los que siempre devuelve False nunca son generados y los casos para los que alguna vez se devuelve True y otras veces False pueden ser generados o no.
 
-Dos candidatos se definen como isomorfos si las partes de sus grafos alcanzables desde la raíz son isomorfas. En el caso de **repOk** el objeto raíz es el objeto pasado como argumento implícito.
+Dos candidatos serán definidos como isomorfos si las partes de sus grafos alcanzables desde la raíz son isomorfas. En el caso de **\texttt{repOk}** el objeto raíz es aquel pasado como argumento implícito.
 
-El isomorfismo entre candidatos divide el espacio de estados en particiones isomórficas (debido al ordenamiento lexicográfico introducido por el orden de los valores de los dominios de los campos y la ordenación de los campos realizado por **repOk**). Para cada una de dichas particiones isomomorficas **Korat** genera únicamente el candidato lexicográficamente menor.
+El isomorfismo entre candidatos divide el espacio de estados en particiones isomórficas (debido al ordenamiento lexicográfico introducido por el orden de los valores de los dominios de los campos y la ordenación de los campos realizado por **\texttt{repOk}**). Para cada una de dichas particiones isomomorficas **Korat** genera únicamente el candidato lexicográficamente menor.
 
-Además con el proceso explicado anteriormente para ir generando el siguiente candidato teniendo en cuenta la lista de ordenación de los campos **Korat** se asegura de no generar varios candidatos dentro de la misma partición isomórfica.
+Además, con el proceso explicado anteriormente para generar el siguiente candidato, teniendo en cuenta la lista de ordenación de los campos, **Korat** se asegura de no generar varios candidatos dentro de la misma partición isomórfica.
 
 ### 6.2: Smallcheck
 
-La segunda herramienta a tratar en este apartado es **Smallcheck** [@smallcheck] una librería para Haskell usada en el testing basado en propiedades. Esta librería parte de las ideas del **Quickcheck** y perfecciona algunos de los puntos flacos de este.
+La segunda herramienta a tratar en este apartado es **\texttt{Smallcheck}** [@smallcheck] una librería para Haskell usada en el testing basado en propiedades. Esta librería parte de las ideas del **\texttt{Quickcheck}** y perfecciona algunos de los puntos flacos de este.
 
-La principal diferencia de **Smallcheck** respecto a **Quickcheck** es la generación de sus casos de prueba. En este caso **Smallcheck** se apoya en la "hipótesis del ámbito pequeño" la cual dice que si un programa no cumple su especificación en alguno de sus casos casi siempre existirá un caso simple en el cual no la cumpla o lo que viene a ser lo mismo, que si un programa no falla en casos pequeños lo normal es que no falle en ninguno de sus casos.
+La principal diferencia de **\texttt{Smallcheck}** respecto a **\texttt{Quickcheck}** es la forma en que genera sus casos de prueba. En este caso **\texttt{Smallcheck}** se apoya en la "hipótesis del ámbito pequeño" la cual dice que si un programa no cumple su especificación en alguno de sus casos casi siempre existirá un caso simple en el cual no la cumpla o lo que viene a ser lo mismo, que si un programa no falla en casos pequeños lo normal es que no falle en ninguno de sus casos.
 
-Partiendo de esta idea cambia la generación existente en **Quickcheck**, la cual era aleatoria, por una generación exhaustiva de todos los casos de prueba pequeños ordenados por **profundidad** (que es el nombre usado para el tamaño), dejando a criterio del usuario hasta que profundidad deben considerarse como pequeños. A continuacion presentamos como están definidas las profundidades más importantes:
+Partiendo de esta idea cambia la generación existente en **\texttt{Quickcheck}**, que era aleatoria, por una generación exhaustiva de todos los casos de prueba pequeños, ordenados por *profundidad* (que es el nombre usado para el tamaño), dejando a criterio del usuario hasta que profundidad deben considerarse como pequeños. A continuación presentaremos como están definidas las profundidades más importantes:
 
-- En el caso de los tipos de datos algebraicos como es usual la profundidad de una construcción de aridad cero es cero mientras que la profundidad de una construcción de aridad positiva es una más que la mayor profundidad de todos sus argumentos.
+- En el caso de los tipos de datos algebraicos, como es usual, la profundidad de una construcción de aridad cero es cero mientras que la profundidad de una construcción de aridad positiva es una más que la mayor de todos sus argumentos.
 
-- En el caso de las tuplas dicha profundidad se define un poco diferente. La profundidad de una tupla de aridad cero es cero pero la profundidad de una tupla de aridad positiva es simplemente la mayor profundidad de entre todas las de sus componentes.
+- En el caso de las tuplas, dicha profundidad se define de manera un poco diferente. La profundidad de una tupla de aridad cero es cero pero la de una tupla de aridad positiva es la mayor profundidad de entre todas las de sus componentes.
 
-- En el caso de los tipos numéricos la definición de la profundidad es con respecto a una representación imaginaria como una estructura de datos. De esta manera, la profundidad de un entero *i* será su valor absoluto, ya que se construyó de manera algebraica como **Succ^i^ Zero**. A su vez, la profundidad de un numero decimal **s x 2^e^** es la profundidad del par de enteros (s,e).
+- En el caso de los tipos numéricos, la definición de la profundidad se realiza con respecto a una representación imaginaria como una estructura de datos. De esta manera, la profundidad de un entero *i* será su valor absoluto, ya que se construyó de manera algebraica como **Succ^i^ Zero**. A su vez, la profundidad de un numero decimal **s x 2^e^** es la de la tupla de enteros (s,e).
 
-**Smallcheck** define una clase **Serial** de tipos que pueden ser enumerados hasta una determinada profundidad. Para todos los tipos de datos del preludio existen instancias predefinidas de la clase **Serial**. Sin embargo definir una nueva instancia de dicha clase para un tipo de datos algebraico es muy fácil, se trata de un conjunto de combinadores **cons<N>**, genéricos para cualquier combinación de tipos Serial, donde **<N>** es la aridad del constructor.
+**\texttt{Smallcheck}** define una clase **\texttt{Serial}** de tipos que pueden ser enumerados hasta una determinada profundidad. Existen instancias predefinidas de la clase **\texttt{Serial}** para todos los tipos de datos del preludio . Sin embargo, es muy fácil definir una nueva instancia de dicha clase para un tipo de datos algebraico, ésta es de un conjunto de combinadores **\texttt{cons<N>}**, genéricos para cualquier combinación de tipos Serial, donde **N** es la aridad del constructor.
 
-Por ejemplo supongamos un tipo de datos en Haskell **Prop** en el cual tenemos una variable, la negación de una variable y el **Or** de dos variables
+Supongamos un tipo de datos en Haskell **\texttt{Prop}** en el que tenemos una variable, la negación de una variable y el **\texttt{Or}** de dos variables
 
 ```haskell
   data Prop = Var Name | Not Prop | Or Prop Prop
 ```
 
-Definir una instancia de la clase **Serial** para dicho tipo de datos sería como sigue. Asumiendo una definición similar para el tipo **Name**. 
+Para dicho tipo de datos definir una instancia de la clase **\texttt{Serial}**, asumiendo una definición similar para el tipo **\texttt{Name}**, sería. 
 
 ```haskell
   instance Serial Prop where
     series = cons1 Var \/ cons1 Not \/ cons2 Or
 ```
-Una serie simplemente es una función que dado un entero devuelve una lista finita.
+Una serie es simplemente una función que dado un entero devuelve una lista finita.
 
 ```haskell
   type Series a = Int -> [a]
@@ -554,7 +600,7 @@ A su vez el producto y la suma sobre dos series se definen como:
   (><) :: Series a -> Series b -> Series (a, b)
   s1 >< s2 = \d -> [(x,y) | x <- s1 d, y <- s2 d]
 ```
- Por último los combinadores **cons<N>** están definidos usando **><** decrementando y comprobando la profundidad correctamente.
+ Por último, los combinadores **\texttt{cons<N>}** están definidos usando **><** decrementando y comprobando la profundidad correctamente.
 
  ```haskell
   cons0 c = \d -> [c]
@@ -563,10 +609,10 @@ A su vez el producto y la suma sobre dos series se definen como:
  ```
 
 
-Usar el esquema general para definir series de valores de prueba muchas veces produce que para alguna profundidad pequeña **\texttt{d}** los 10.000-100.000 casos de prueba son rápidamente comprobados pero para la profundidad **\texttt{d+1}**  resulte imposible completar los miles de millones de casos de prueba. Por ello resulta necesario reducir algunas dimensiones del espacio de busqueda de manera que otras de las dimensiones puedan ser comprobadas en mayor profundidad.
+Cuando se usa muchas veces el esquema general para definir valores de prueba se produce que para alguna profundidad pequeña **\texttt{d}** los 10.000-100.000 casos de prueba son comprobados rápidamente, pero para la profundidad **\texttt{d+1}**  resulte imposible completar los miles de millones de casos de prueba. Por ello, resulta necesario reducir algunas dimensiones del espacio de búsqueda de manera que otras de las dimensiones puedan ser comprobadas en mayor profundidad.
 
-El primer punto a tener en cuenta es que a pesar de que los números enteros pueden parecer una elección obvia como valores bases para las pruebas debemos tener en cuenta que los espacios de busqueda para los tipos compuestos (especialmente funcionales) al usar bases numéricas crecen de manera muy rápida. En muchos casos el tipo booleano puede ser una elección perfectamente válida para los valores bases y con ello se conseguiría reducir en gran medida el espacio de busqueda respecto a la utilización de enteros.
+El primer punto a tener en cuenta es, que a pesar de que los números enteros pueden parecer una elección obvia como valores base para las pruebas, debemos considerar que los espacios de busqueda para los tipos compuestos (especialmente funcionales) al usar bases numéricas, crecen de manera muy rápida. En muchos casos el tipo booleano puede ser una elección perfectamente válida para los valores base, y con ello se conseguiría reducir en gran medida el espacio de busqueda respecto a la utilización de enteros.
 
-Existe otra version de **Smallcheck** llamada **Lazy Smallcheck**, que a su vez se aprovecha de la evaluación perezosa de Haskell, la cual permite que una función devuelva un valor aunque esta esté aplicada sobre una entrada definida parcialmente. Esta posibilidad de ver el resultado de una función sobre muchas entradas en una sola ejecución puede resultar de gran ayuda en el testeo basado en propiedades ya que si una función se cumple para una solución parcial, esta se cumplirá para todas las funciones totalmente definidas que partan de dicha definición parcial. En eso se centra el **Lazy Smallcheck**, en evitar generar todas esas funciones totalmente definidas que no aportan nada de información extra sobre la definición parcial. La actual versión de **Lazy Smallcheck** es capaz de testear propiedades de primer orden con o sin cuantificadores universales.
+Existe otra version de **\texttt{Smallcheck}** llamada **\texttt{Lazy Smallcheck}**, que a su vez se aprovecha de la evaluación perezosa de Haskell, la cual permite que una función devuelva un valor, aunque esta esté aplicada sobre una entrada definida parcialmente. Esta posibilidad de obtener el resultado de una función sobre muchas entradas en una sola ejecución, puede resultar de gran ayuda en el testeo basado en propiedades, ya que si una función se cumple para una solución parcial, esta se cumplirá para todas las funciones totalmente definidas que partan de la misma. En eso se centra el **\texttt{Lazy Smallcheck}**, en evitar generar todas esas funciones totalmente definidas que no aportan nada de información extra sobre la definición parcial. La actual versión de **\texttt{Lazy Smallcheck}** es capaz de testear propiedades de primer orden con o sin cuantificadores universales.
 
 #References
