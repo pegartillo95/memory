@@ -313,8 +313,7 @@ Una vez tenemos la interfaz entre las dos clases **\texttt{Sized}** y **\texttt{
 En primer lugar vamos a tratar la clase **\texttt{Allv}**, cuyas instancias cuentan unicamente con una función, **\texttt{allv}** la cual devuelve la lista de todos los posibles valores del tipo de datos. 
 
 Al principio esta clase estaba pensada para ser una única clase que utilizara la librería **\texttt{Generics}** y para contar con un método, **\texttt{compose}** con el cual ser capaces de generar instancias de la clase **\texttt{Allv}** para los tipos definidos por el usuario. Dicha función se encargaría de crear la lista de todos los valores (**\texttt{allv}**) para el nuevo tipo de datos a partir de las listas de los tipos predefinidos, pero a la hora de integrarlo con la clase **\texttt{Sized}** encontramos un problema . La idea que teníamos sobre esta clase era darle al usuario la posibilidad de pedir los *n* valores mas pequeños de una clase o los *n* primeros valores de tamaño menor o igual a un número prefijado por él.
-Lo cual entraba en conflicto con la manera en la que generábamos las listas de **\texttt{allv}** para los tipos definidos por el usuario.
-Para realizar la composición de dos listas seguimos el método mostrado en la siguiente figura.
+Lo cual entraba en conflicto con la manera en la que generábamos las listas de **\texttt{allv}** para los tipos definidos por el usuario.(Figura x)
 
 //////////IMAGEN EXPLICATIVA COMPOSE///////////////////// 
 
@@ -361,6 +360,7 @@ Además, cuenta con una serie de funciones auxiliares que realizan parte del pro
 
 - **\texttt{tupleParam}** crea las tuplas de parámetros para cada una de las funciones auxiliares **\texttt{f}**.
 
+![Esquema funcionamiento compose](imagenes/esquema_ret.jpg "Esquema funcionamiento compose")
 
 ![Función gen_allv](imagenes/genAllv.jpg "Función gen_allv")
 
