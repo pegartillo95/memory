@@ -11,12 +11,12 @@ Summary:
 
 \pagebreak
 
-# 1.a: Introducción
+# 1.a  Introducción
 Una de las partes más costosas dentro del desarrollo de programas es el testeo, ya que requiere un gran esfuerzo humano para poder especificar los diferentes casos de prueba, lanzarlos y analizar los resultados. Ello provoca que en la mayoría de los casos los programas se prueben mucho menos a fondo de lo que sería necesario. Por ello, en los últimos años han sido desarrolladas diversas herramientas para automatizar de manera parcial dicho proceso de testeo, sin embargo la mayoría de ellas están especializadas en un único lenguaje de programación.
 
 Nuestro objetivo es conseguir una plataforma que permita el testeo de aplicaciones de manera inmediata para el usuario y que admita como entrada un programa escrito en cualquier lenguaje de programación.
 
-En el siguiente trabajo vamos a tratar la plataforma **CaseGenerator**, que se engloba dentro del proyecto CAVI-ART, siendo esta parte la encargada de generar los casos de prueba de manera automatizada, adaptándolos a las necesidades de cada ejecución. Este proyecto toma como base las ideas desarrolladas anteriormente por programas como **Quickcheck**, **Korat** o **Smallcheck**, pero intentando conseguir un programa final que sea más directo y fácil de usar, y a la vez compatible con diversos lenguajes de programación tanto funcionales como no funcionales. Para lograr el primer objetivo hemos eliminado la obligación de que el usuario defina un nuevo generador para cada uno de los nuevos tipos definidos. Así, será el propio programa el que realice la tarea de investigar estos tipos y deducir un generador de casos óptimo para cada uno de ellos. Para lograr el segundo en cambio hemos creado una Representación Intermedia (IR) a la que se traducen los programas antes de ser testeados y que permite escribir una plataforma independiente del lenguaje de programación.
+En el siguiente trabajo vamos a tratar la plataforma **CaseGenerator**, que se engloba dentro del proyecto CAVI-ART, siendo esta parte la encargada de generar los casos de prueba de manera automatizada, adaptándolos a las necesidades de cada ejecución. Este proyecto toma como base las ideas desarrolladas anteriormente por programas como Quickcheck, Korat o Smallcheck, pero intentando conseguir un programa final que sea más directo y fácil de usar, y a la vez compatible con diversos lenguajes de programación tanto funcionales como no funcionales. Para lograr el primer objetivo hemos eliminado la obligación de que el usuario defina un nuevo generador para cada uno de los nuevos tipos definidos. Así, será el propio programa el que realice la tarea de investigar estos tipos y deducir un generador de casos óptimo para cada uno de ellos. Para lograr el segundo en cambio hemos creado una Representación Intermedia (IR) a la que se traducen los programas antes de ser testeados y que permite escribir una plataforma independiente del lenguaje de programación.
 
 A su vez profundizaremos en la estructura de clases de CaseGenerator y visualizaremos su código, de manera que queden claras todas las ideas detrás de su funcionamiento y las razones por las que decidimos utilizar algunas técnologías, como la librería **\texttt{Generics}** del compilador GHC y la extensión de Haskell llamada **\texttt{Template Haskell}**.
 
@@ -24,9 +24,9 @@ Por último, tras explicar el funcionamiento de la plataforma expondremos alguno
 
 \pagebreak
 
-# 2. Preliminares
+# 2  Preliminares
 
-### 2.1: CAVI-ART Project
+### 2.1  CAVI-ART Project
 En esta seccion explicamos el proyecto CAVI-ART, actualmente en fase de desarollo en la UCM y del cual forma parte mi TFG.
 
 La plataforma **CAVI-ART** consiste en un conjunto de herramientas pensadas para ayudar al programador en la validacion de programas escritos en diferentes lenguajes. Estas ayudas incluyen la extracción automática y prueba de condiciones de verificación, la prueba automática de terminación (siempre que sea decidible usando la tecnología actual), la inferencia automática de algunos invariantes y la generación automática y ejecución de casos de prueba. [@caviart1; @caviart2; @caviart3]
@@ -35,7 +35,7 @@ Un aspecto clave de la plataforma es su Representación Intermedia de los progra
 
 La IR se diseñó con la intención de facilitar al máximo posible las tareas nombradas con anterioridad tanto como fuera posible, mediante un diseño simple que cuenta con muy pocas construcciones primitivas. Nunca se pensó en la IR como código ejecutable sino como una sintaxis abstracta para facilitar el análisis estático y la verificación formal. Sin embargo en los últimos meses se decidió convertir la IR en código ejecutable, para posibilitar la ejecución de pruebas y construcción de herramientas de testeo, ambas independientes del lenguaje. Esto supone una ventaja ya que la mayoría de las herramientas de testeo existentes están ligadas a un lenguaje en concreto. 
 
-La parte del proyecto encargada de traducir la IR a Haskell y hacer ejecutables los asertos se engloba dentro del trabajo de fin de grado de Marta Aracil Muñoz con título **Implementación de asertos ejecutables para una plataforma de verificación** que también se engloba dentro del proyecto CAVI-ART.
+La parte del proyecto encargada de traducir la IR a Haskell y hacer ejecutables los asertos se engloba dentro del trabajo de fin de grado de Marta Aracil Muñoz con título *Implementación de asertos ejecutables para una plataforma de verificación* que también se engloba dentro del proyecto CAVI-ART.
 
 ![Esquema del proyecto CAVI-ART](imagenes/caviart.jpg "Esquema del proyecto CAVI-ART")
 
@@ -43,10 +43,10 @@ La parte del proyecto encargada de traducir la IR a Haskell y hacer ejecutables 
 
 A continuación pasamos a describir las tecnologías más importantes usadas en el desarrollo de nuestro programa.
 
-### 2.2: QuickCheck
+### 2.2  QuickCheck
 
-**Quickcheck** [@quickcheck] es una herramienta de Haskell pensada para probar funciones escritas en dicho lenguaje sobre un conjunto de casos de prueba generados de manera aleatoria. Dicho programa resultó ser de gran ayuda, pues tiene ideas similares a lo que queríamos conseguir con nuestro proyecto, ya que se trata también de un sistema de prueba tipo caja negra.
-Sin embargo cuenta con  algunas diferencias, sobre todo en la generación de los casos de prueba, ya que **Quickcheck** los genera de manera aleatoria, mientras que nuestro proyecto los genera de manera exhaustiva.
+Quickcheck [@quickcheck] es una herramienta de Haskell pensada para probar funciones escritas en dicho lenguaje sobre un conjunto de casos de prueba generados de manera aleatoria. Dicho programa resultó ser de gran ayuda, pues tiene ideas similares a lo que queríamos conseguir con nuestro proyecto, ya que se trata también de un sistema de prueba tipo caja negra.
+Sin embargo cuenta con  algunas diferencias, sobre todo en la generación de los casos de prueba, ya que Quickcheck los genera de manera aleatoria, mientras que nuestro proyecto los genera de manera exhaustiva.
 
 ##### Ejemplo de funcionamiento del programa
 
@@ -57,7 +57,7 @@ En este caso vamos a trabajar con la siguiente propiedad de las listas, cierta p
     reverse (xs++ys) == reverse ys++reverse xs
 ```
 
-Ahora lanzamos el programa **Quickcheck** para comprobar si supera todos los casos de prueba.
+Ahora lanzamos el programa Quickcheck para comprobar si supera todos los casos de prueba.
 ```haskell
   Main> QuickCheck prop_RevApp
   OK: passed 100 tests.
@@ -68,7 +68,7 @@ Veamos ahora que pasa en caso de que nuestra función no esté definida correcta
   prop_RevApp2 xs ys = 
     reverse (xs++ys) == reverse xs++reverse ys
 ```
-Al ejecutar la nueva funcion desde **Quickcheck**.
+Al ejecutar la nueva funcion desde Quickcheck.
 
 ```haskell
   Main> quickcheck prop_RevApp2
@@ -77,10 +77,10 @@ Al ejecutar la nueva funcion desde **Quickcheck**.
   [-2,1]
 ```
 
-Aquí podemos observar que en caso de fallo **Quickcheck** nos devuelve el contraejemplo de tamaño mínimo, lo que nos indica esta vez es que nuestra definición ha fallado en el primer test y que en dicho caso las respectivas listas para las que ha sido probado falso son [2] y [-2,1].
+Aquí podemos observar que en caso de fallo Quickcheck nos devuelve el contraejemplo de tamaño mínimo, lo que nos indica esta vez es que nuestra definición ha fallado en el primer test y que en dicho caso las respectivas listas para las que ha sido probado falso son [2] y [-2,1].
 
 #####Leyes condicionales
-En algunos casos las leyes que queremos definir no pueden ser representadas mediante una simple función y solo son ciertas bajo unas precondiciones muy concretas. Para dichos casos **Quickcheck** cuenta con el operador de implicación **\texttt{==>}** para representar dichas leyes condicionales.
+En algunos casos las leyes que queremos definir no pueden ser representadas mediante una simple función y solo son ciertas bajo unas precondiciones muy concretas. Para dichos casos Quickcheck cuenta con el operador de implicación **\texttt{==>}** para representar dichas leyes condicionales.
 Por ejemplo una ley tan simple como la siguiente:
 ```haskell
   x <= y ==> max x y == y
@@ -91,10 +91,10 @@ Puede ser representada mediante la siguiente definición.
   prop_MaxLe x y = x <= y ==> max x y == y
 ```
 
-En este ejemplo podemos observar que el resultado de la función es de tipo **\texttt{Property}** en vez de **\texttt{Boolean}**, lo cual es debido a que en el caso de las leyes condicionales en vez de probar la propiedad para 100 casos aleatorios, ésta es probada contra 100 casos que cumplan la precondición establecida. Si uno de los candidatos no la cumple será descartado y se considerará el siguiente. **Quickcheck** genera un máximo de 1000 casos de prueba y si entre ellos no se han encontrado al menos 100 que cumplan la precondición, simplemente informa al usuario cuantos la cumplen. Dicho límite está pensado para que en caso de que no existan más casos que cumplan dicha precondición el programa no busque indefinidamente.
+En este ejemplo podemos observar que el resultado de la función es de tipo **\texttt{Property}** en vez de **\texttt{Boolean}**, lo cual es debido a que en el caso de las leyes condicionales en vez de probar la propiedad para 100 casos aleatorios, ésta es probada contra 100 casos que cumplan la precondición establecida. Si uno de los candidatos no la cumple será descartado y se considerará el siguiente. Quickcheck genera un máximo de 1000 casos de prueba y si entre ellos no se han encontrado al menos 100 que cumplan la precondición, simplemente informa al usuario cuantos la cumplen. Dicho límite está pensado para que en caso de que no existan más casos que cumplan dicha precondición el programa no busque indefinidamente.
 
 #####Monitorizando los datos
-Al testear propiedades debemos tener cuidado, pues quizás parezca que hemos probado una propiedad a fondo para estar seguros de su credibilidad pero esta simplemente ser aparente. Intentaremos ejemplificarlo usando la inserción en una lista ordenada.
+Al testear propiedades debemos tener cuidado, pues quizás parezca que hemos probado una propiedad a fondo para estar seguros de su credibilidad pero esta simplemente sea aparente. Intentaremos ejemplificarlo usando la inserción en una lista ordenada.
 ```haskell
   prop_Insert :: Int -> [Int] -> Property
   prop_Insert x xs =
@@ -103,13 +103,13 @@ Al testear propiedades debemos tener cuidado, pues quizás parezca que hemos pro
         ordered (insert x xs)
 ```
 Esto nos permite conocer cuantas de las pruebas se realizaron sobre una lista vacia. En cuyo caso la condición de **\texttt{ordered xs}** es trivial.
-Si ejecutamos esta nueva función con **Quickcheck** obtendremos el siguiente mensaje.
+Si ejecutamos esta nueva función con Quickcheck obtendremos el siguiente mensaje.
 ```haskell
   Ok, passed 100 tests (43% trivial)
 ```
 Es decir que el 43% de los tests realizados son sobre una lista vacia.
 
-Pero a su vez **Quickcheck** nos ofrece la posibilidad de un mejor análisis, más alla de etiquetar uno de los casos que nos interese. Podemos realizar una especie de *histograma*, utilizando la palabra reservada **\texttt{collect}**, que nos dará una mayor información de la distribución de los casos de prueba, por ejemplo en este caso según su longitud.
+Pero a su vez Quickcheck nos ofrece la posibilidad de un mejor análisis, más allá de etiquetar uno de los casos que nos interese. Podemos realizar una especie de *histograma*, utilizando la palabra reservada **\texttt{collect}**, que nos dará una mayor información de la distribución de los casos de prueba, por ejemplo en este caso según su longitud.
 ```haskell
   prop_Insert :: Int -> [Int] -> Property
   prop_Insert x xs =
@@ -129,7 +129,7 @@ Al ejecutarlo obtendriamos un resultado como el siguiente, separado según los t
 ```
 
 ######Como definir generadores
-En primer lugar vamos a empezar definiendo la clase **\texttt{Arbitrary}** de la cual un tipo es una instancia si podemos generar casos aleatorios de él. La manera de generar los casos de prueba depende por supuesto del tipo.
+En primer lugar Quickcheck empieza definiendo la clase **\texttt{Arbitrary}** de la cual un tipo es una instancia si podemos generar casos aleatorios de él. La manera de generar los casos de prueba depende por supuesto del tipo.
 ```haskell
   class Arbitrary a where
     arbitrary :: Gen a
@@ -141,7 +141,7 @@ En primer lugar vamos a empezar definiendo la clase **\texttt{Arbitrary}** de la
 ```
 En esta definición **\texttt{Rand}** es un número semilla aleatorio y un generador no es más que una función que puede crear una **\texttt{a}** de una manera pseudoaleatoria.
 
-Ahora vamos a echarle un vistazo a las posibilidades que nos ofrece **Quickcheck** a la hora de definir los generadores de casos para los tipos de datos definidos por el usuario.
+Ahora vamos a analizar las posibilidades que nos ofrece Quickcheck a la hora de definir los generadores de casos para los tipos de datos definidos por el usuario.
 
 Supongamos que definimos el tipo **\texttt{Colour}** de la siguiente manera
 ```haskell
@@ -161,11 +161,11 @@ Vamos a observar otro ejemplo, en este caso un generador para listas de un tipo 
       [ (1, return [])
         (4, liftM2 (:) arbitrary arbitrary)]
 ```
-En ella usamos la función **\texttt{frequency}** la cual funciona de manera similar a **\texttt{oneof}**, pero dándole pesos distintos a los diferentes casos. En este ejemplo le damos peso 1 a la lista vacia y peso 4 a la lista compuesta de otras 2 listas, con lo cual obtendremos casos de prueba de una longitud media de 4 y de esta manera evitaremos el problema indicado anteriormente en el que la mayoría de los casos de prueba sean listas vacias.
+En ella usamos la función **\texttt{frequency}** la cual funciona de manera similar a **\texttt{oneof}**, pero dándole pesos distintos a los diferentes casos. En este ejemplo le damos peso 1 a la lista vacia y peso 4 a la lista compuesta de otras 2 listas, con lo cual obtendremos 4 veces más casos de prueba de longitud 4 que listas vacias y de esta manera evitaremos el problema indicado anteriormente en el que la mayoría de los casos de prueba eran listas vacias.
 
-### 2.3: Librería Generics de GHC
+### 2.3  Librería Generics de GHC
 
-El siguiente punto a tratar en estos preliminares es la librería **\texttt{Generics}** del compilador GHC de Haskell[@generics], una librería utilizada principalmente para la generación automática de instancias de funciones correctas para cualquiera que sea el tipo de datos. En el caso de este proyecto **\texttt{Generics}** apareció como una librería necesaria para escribir nuestro programa de manera que funcionara para cualquier tipo de datos, incluídos los definidos por el usuario y de los cuales no podemos tener conocimiento por adelantado.
+El siguiente punto a tratar en estos preliminares es la librería **\texttt{Generics}** del compilador GHC de Haskell [@generics], una librería utilizada principalmente para la generación automática de instancias de funciones correctas para cualquiera que sea el tipo de datos. En el caso de este proyecto **\texttt{Generics}** apareció como una librería necesaria para escribir nuestro programa de manera que funcionara para cualquier tipo de datos, incluídos los definidos por el usuario y de los cuales no podemos tener conocimiento por adelantado.
 
 Dicha librería dentro de Haskell es posible por dos caracteristicas del propio lenguaje:
 
@@ -181,13 +181,13 @@ En el caso de esta librería, la clase de tipos principal (**\texttt{Generic}**)
 
 - En segundo lugar debemos definir el comportamiento deseado para los tipos de datos cuyo constructor carece de parámetros (representados con **\texttt{U1}** en **\texttt{Generics}**).
 
-- En tercer lugar se trata de definir el comportamiento para los tipos compuestos de acuerdo a como se forman. En Haskell los tipos compuestos solo pueden definirse mediante dos operaciones partiendo de los tipos básicos. Estas dos operaciones son la suma y el producto de tipos (representados como \texttt{:+:} y \texttt{:*:} respectivamente en **\texttt{Generics}**). Deberemos establecer como queremos que sea el comportamiento de las funciones de nuestra clase genérica de acuerdo a como se forma nuestro tipo a partir de los tipos básicos.
+- En tercer lugar se trata de definir el comportamiento para los tipos compuestos de acuerdo a como se forman. En Haskell los tipos compuestos solo pueden definirse mediante dos operaciones partiendo de los tipos básicos. Estas dos operaciones son la union disjunta y el producto de tipos (representados como \texttt{:+:} y \texttt{:*:} respectivamente en **\texttt{Generics}**). Deberemos establecer como queremos que sea el comportamiento de las funciones de nuestra clase genérica de acuerdo a como se forma nuestro tipo a partir de los tipos básicos.
 
 - Por último están dos tipos para representar meta-información y etiquetado de tipos (representados respectivamente por **M1** y **K1**), que nos permitirán definir el comportamiento esperado para las funciones cuando esta depende de las etiquetas o parte de la meta-información del tipo.
 
-Una vez definidas las funciones para estos cinco diferentes combinadores es necesario definir algunas instancias para los tipos predefinidos como **\texttt{Int}**, **\texttt{Char}**, **\texttt{Boolean}**... de manera que si el usuario crea un tipo complejo como por ejemplo un Diccionario con variables de tipo **\texttt{Int}** como clave y **\texttt{Char}**, como valores tengamos un punto de partida para construir mediante Generics las instancias en nuestra clase para los nuevos tipos de datos.
+Una vez definidas las funciones para estos cinco diferentes combinadores es necesario definir algunas instancias para los tipos predefinidos como **\texttt{Int}**, **\texttt{Char}**, **\texttt{Boolean}**... de manera que si el usuario crea un tipo complejo como por ejemplo un Diccionario con variables de tipo **\texttt{Int}** como clave y **\texttt{Char}**, como valores tengamos un punto de partida para construir mediante **\texttt{Generics}** las instancias en nuestra clase para los nuevos tipos de datos.
 
-### 2.4 Template Haskell
+### 2.4  Template Haskell
 En este apartado trataremos sobre **\texttt{Template Haskell}** [@template_haskell], una extensión sobre el lenguaje original que añade la posibilidad de realizar metaprogramación en Haskell, de una manera similar al sistema de *templates de C++*, de ahí su nombre, permitiendo a los programadores computar parte de la generación de código en tiempo de compilación dependiendo de las necesidades.
 
 ##### Un ejemplo de la idea básica
@@ -205,7 +205,7 @@ El símbolo $ indica "evaluar en tiempo de compilación". La llamada a la funci�
 ```haskell
     $(printf ”Error: %s on line %d”)
 ```
- lo traduce en la siguiente expresión lambda en Haskell
+ lo traduce a la siguiente expresión lambda en Haskell
 ```haskell
     (\ s0 -> \ n1 -> ”Error: ” ++ s0 ++ ” on line ” ++ show n1)
 ```
@@ -213,7 +213,7 @@ Sobre la cual se realizará la comprobación de tipos y después se aplicará so
 
 ##### Como usar template Haskell
 
-Lo primero que hay que resaltar es el hecho que las funciones de **\texttt{Template Haskell}** que son ejecutadas en tiempo de compilación están escritas en el mismo lenguaje que las funciones utilizadas en tiempo de ejecución. Una gran ventaja de esta aproximación es que todas las librerías existentes y las técnicas usadas en Haskell pueden ser utilizadas directamente en Template Haskell. Por otro lado, una de las posibles desventajas de esta aproximación es la necesidad de tener que utilizar notaciones como "$" o "[||]" (conocidas como *splicing* y *quasi-quotes* respectivamente) para especificar que partes del código se deben ejecutar en tiempo de ejecución y cuales en tiempo de compilación.
+Lo primero que hay que resaltar es el hecho que las funciones de **\texttt{Template Haskell}** que son ejecutadas en tiempo de compilación están escritas en el mismo lenguaje que las funciones utilizadas en tiempo de ejecución. Una gran ventaja de esta aproximación es que todas las librerías existentes y las técnicas usadas en Haskell pueden ser utilizadas directamente en Template Haskell. Por otro lado, una de las posibles desventajas de esta aproximación es la necesidad de tener que utilizar notaciones como \texttt{$} o \texttt{[||]} (conocidas como *splicing* y *quasi-quotes* respectivamente) la primera de ellas traduce las expresiones en Template Haskell a expresiones Haskell y la otra realiza la traducción inversa.
 
 En los ejemplos más sencillos, como el anteriormente presentado sobre como escribir una función **\texttt{printf}** en **\texttt{Template Haskell}** la notación del splicing o la quasi-quotation pueden resultar de gran ayuda. El problema es que tan pronto como empezamos a hacer cosas más complejas en meta-programación esta notación deja de ser suficiente. Por ejemplo no es posible definir una función para seleccionar el i-ésimo elemento de una tupla de n elementos usando solo esas dos notaciones. Dicha función en **\texttt{Template Haskell}** sería asi.
 
@@ -234,7 +234,7 @@ En los ejemplos más sencillos, como el anteriormente presentado sobre como escr
 ```
 
 Para explicar un poco este código vamos a empezar de abajo a arriba, con el fin de entender las partes que usaremos despues en la función principal **\texttt{sel}**.
-En primer lugar el cometido de **\texttt{as}** es crear una lista de nombres de aes desde a1 hasta an. La segunda de ellas, **\texttt{rhs}** se encarga de coger el i-esimo elemento de la lista de aes y devolverlo como una variable de tipo **\texttt{ExpQ}** que es el tipo utilizado en **\texttt{Template Haskell}** para las expresiones. La función **\texttt{pat}** transforma en primer lugar la lista de **\texttt{Strings}** en una lista de variables de tipo **\texttt{PatQ}** que es el utilizado en **\texttt{TH}** para referirse a los patrones y después junta dicha lista en una tupla de tipo **\texttt{PatQ}**. Después realiza un emparejamiento de la tupla tipo **\texttt{PatQ}** con el **\texttt{rhs}** mediante la función **\texttt{simpleM}** (simple Match).
+En primer lugar el cometido de **\texttt{as}** es crear una lista de nombres de aes desde **\texttt{a1}** hasta **\texttt{an}**. La segunda de ellas, **\texttt{rhs}** se encarga de coger el i-esimo elemento de la lista de aes y devolverlo como una variable de tipo **\texttt{ExpQ}** que es el tipo utilizado en **\texttt{Template Haskell}** para las expresiones. La función **\texttt{pat}** transforma en primer lugar la lista de **\texttt{String}** en una lista de variables de tipo **\texttt{PatQ}** que es el utilizado en **\texttt{TH}** para referirse a los patrones y después junta dicha lista en una tupla de tipo **\texttt{PatQ}**. Después realiza un emparejamiento de la tupla tipo **\texttt{PatQ}** con el **\texttt{rhs}** mediante la función **\texttt{simpleM}** (simple Match).
 Finalmente, la función **\texttt{caseE}** que toma como parámetros una variable x (de tipo **\texttt{ExpQ}** como indica la quasi-quotation alrededor de x) y el emparejamiento devuelto por **\texttt{alt}**, realizando la sustituición de la **\texttt{x}** al lado izquierdo de la flecha por el patrón correspondiente y colocando al lado izquierdo de la flecha la **\texttt{ExpQ}** devuelta por **\texttt{rhs}**, que es el elemento tomado de la tupla.
 
 Esta función se traduciria a una expresión lambda que realizando la llamada **\texttt{sel 4 6}** es decir seleccionar el cuarto elemento de una tupla de 6 tendría esta forma
@@ -243,7 +243,7 @@ Esta función se traduciria a una expresión lambda que realizando la llamada **
 ```
 
 ##### Reification (Cosificación)
-La *reification* es la herramienta presente en **\texttt{Template Haskell}** que permite al programador preguntar sobre el estado de la tabla de símbolos que guarda el compilador. Por ejemplo se puede escribir un código como el siguiente:
+La *reification* es una facilidad de **\texttt{Template Haskell}** que permite al programador preguntar sobre el estado de la tabla de símbolos que guarda el compilador. Por ejemplo se puede escribir un código como el siguiente:
 
 ```haskell
   module M where
@@ -262,21 +262,21 @@ La *reification* es la herramienta presente en **\texttt{Template Haskell}** que
     here = reifyLocn
 ```
 
-La primera de las funciones declaradas devuelve un resultado de tipo **\texttt{Decl}** (equivalente a **Q Dec**), representando la declaración del tipo **\texttt{T}**. El siguiente cómputo **\texttt{reifyType length}** devuelve un resultado de tipo **\texttt{Type}** (equivalente a **\texttt{Q Typ}**) representando el conocimiento del compilador sobre el tipo de la función **\texttt{length}**.
+La primera de las funciones declaradas devuelve un resultado de tipo **\texttt{Decl}** (equivalente a **\texttt{Q Dec}**), representando la declaración del tipo **\texttt{T}**. El siguiente cómputo **\texttt{reifyType length}** devuelve un resultado de tipo **\texttt{Type}** (equivalente a **\texttt{Q Typ}**) representando el conocimiento del compilador sobre el tipo de la función **\texttt{length}**.
 En tercer lugar **\texttt{reifyFixity}** devuelve la *fixity* de los argumentos de la función lo cual resulta muy útil cuando se quiere deducir como imprimir algo. Finalmente **\texttt{reifyLocn}** devuelve un resultado de tipo **\texttt{Q String}**, que representa la posición en el código fuente desde donde se ejecutó **\texttt{reifyLocn}**.
 
 De esta manera la *reification* devuelve un resultado que puede ser analizado y utilizado en otros cálculos, pero hay que recordar, que al tratarse de una herramienta del lenguaje para acceder a la tabla de símbolos y estar encapsulado dentro de la mónada **\texttt{Q}**, no puede ser usada como una función, por ejemplo con la función map (**\texttt{map reifyType xs}** sería incorrrecto).
 
 \pagebreak
 
-# 3. Nuestra propuesta: las clases Allv, Sized y Arbitrary
+# 3  Nuestra propuesta: las clases Allv, Sized y Arbitrary
 
-### 3.1: Black box testing en nuestro contexto
+### 3.1  Black box testing en nuestro contexto
 
 En el mundo del testing existen dos grandes posibilidades: sistemas de tipo caja negra y sistemas de tipo caja blanca. Los de caja negra son aquellos sistemas de testing que no se basan en la estructura interna, si no que trabajan únicamente con la entrada, sobre la que aplican una precondición, y la salida sobre la que comprueban si cumple las postcondiciones establecidas. 
 En cambio los de caja blanca no testean únicamente las entradas y salidas del programa aplicandoles precondiciones y comprobando la postcondiciones, sino que además se basan en la estructura interna del programa para realizar la generación de casos de prueba, de forma que se cubra todo el texto del programa. Según el criterio de cobertura deseado se pueden generar casos para ejercitar todas las condiciones o todas las ramas o todos los caminos.
 
-En el caso de nuestro proyecto nos decidimos por el método de caja negra, pues queríamos conseguir un sistema válido para poder probar cualquier programa sin necesidad de tener que adaptar nuestra plataforma para cada uno de ellos, es decir que funcionase fuese cual fuese el programa bajo prueba. Esa es una de las desventajas del testeo de tipo caja blanca, que para poder comprobar partes de la estructura interna de un programa tendríamos que adaptar la plataforma para cada uno de los nuevos programas.
+En el caso de nuestro proyecto nos decidimos por el método de caja negra, pues queríamos conseguir un sistema válido para poder probar cualquier programa sin necesidad de tener que volver a generar los casos de prueba cuando cambia la estructura interna del programa. Esa es una de las desventajas del testeo de tipo caja blanca, que para poder comprobar partes de la estructura interna de un programa tendríamos que adaptar la plataforma para cada uno de los nuevos programas.
 
 La idea principal detrás de nuestro proyecto era principalmente la inmediatez y la comodidad del usuario, es decir que para probar un programa no fuera necesario escribir código extra, aparte del ya existente programa, sino que solo fuera especificar como quiere que se generen los casos de prueba y los rangos de los dominios a usar y con eso sea ya capaz de probar su programa, lo cual se ajusta mucho más a la idea de testeo de caja negra.
 
@@ -288,9 +288,9 @@ Las posibles maneras en las que el usuario puede especificar como se generan los
 
 - Coger los *n* primeros casos de prueba de la lista de todos los valores, sea cual sea su tamaño.
 
-### 3.2: Sized
+### 3.2  Sized
 
-En la estructura del proyecto, **\texttt{Sized}** está pensada como la clase externa que hereda de **\texttt{Allv}**. A su vez es la clase que se ocupa de devolver la lista de los casos de prueba a partir de la lista **\texttt{allv}** de un tipo de datos. Esto se realiza mediante dos funciones:
+En la estructura del proyecto, **\texttt{Sized}** está pensada como la clase externa que hereda de **\texttt{Allv}**. Su código se muestra en la figura 2. A su vez es la clase que se ocupa de devolver la lista de los casos de prueba a partir de la lista **\texttt{allv}** de todos los valores de un tipo de datos. Esto se realiza mediante dos funciones:
 
 - **\texttt{sized}** que devuelve los *n* primeros casos menores o iguales a un tamaño *m*.
 
@@ -308,17 +308,15 @@ Una vez tenemos la interfaz entre las dos clases **\texttt{Sized}** y **\texttt{
 
 \pagebreak
 
-### 3.3: Allv/TemplateAllv
+### 3.3  Allv/TemplateAllv
 
 En primer lugar vamos a tratar la clase **\texttt{Allv}**, cuyas instancias cuentan unicamente con una función, **\texttt{allv}** la cual devuelve la lista de todos los posibles valores del tipo de datos. 
 
 Al principio esta clase estaba pensada para ser una única clase que utilizara la librería **\texttt{Generics}** y para contar con un método, **\texttt{compose}** con el cual ser capaces de generar instancias de la clase **\texttt{Allv}** para los tipos definidos por el usuario. Dicha función se encargaría de crear la lista de todos los valores (**\texttt{allv}**) para el nuevo tipo de datos a partir de las listas de los tipos predefinidos, pero a la hora de integrarlo con la clase **\texttt{Sized}** encontramos un problema . La idea que teníamos sobre esta clase era darle al usuario la posibilidad de pedir los *n* valores mas pequeños de una clase o los *n* primeros valores de tamaño menor o igual a un número prefijado por él.
 Lo cual entraba en conflicto con la manera en la que generábamos las listas de **\texttt{allv}** para los tipos definidos por el usuario.(Figura x)
 
-//////////IMAGEN EXPLICATIVA COMPOSE///////////////////// 
-
 Dadas dos listas la idea es realizar el producto cartesiano de ellas siendo este el resultado de generar todas las parejas con un valor de la primera lista y otro de la segunda. Teniendo en cuenta que ambas pueden ser infinitas, dicho producto deberá ser realizado por diagonales.
-La combinación de listas infinitas podía ser realizada sin problemas usando **\texttt{Generics}**, pero el problema llegaba a la hora de querer devolver los *n* primeros valores de un tamaño menor o igual a *m*, ya que para ello debíamos ordenar la lista infinita y encontramos el problema de que en dichas listas infinitas el número de elementos de un tamaño siempre eran infinito y que siempre habría algún elemento a mayores de tamaño menor o igual a *m*, aunque estuviera después de muchos elementos intermedios que no lo fueran. Este problema nos hizo pensar en utilizar **\texttt{Template Haskell}** en lugar de **\texttt{Generics}**.
+La combinación de listas infinitas podía ser realizada sin problemas usando **\texttt{Generics}**, pero el problema llegaba a la hora de querer devolver los *n* primeros valores de un tamaño menor o igual a *m*, ya que para ello debíamos ordenar la lista infinita y encontramos el problema de que en dichas listas infinitas el número de elementos de un tamaño siempre eran infinito y que siempre habría algún elemento más de tamaño menor o igual a *m*, aunque estuviera después de muchos elementos intermedios que no lo fueran. Este problema nos hizo pensar en utilizar **\texttt{Template Haskell}** en lugar de **\texttt{Generics}**.
 
 En la versión definitiva del programa en la clase **\texttt{TemplateAllv}** se encuentra esta funcionalidad de crear una instancia de **\texttt{Allv}** para los tipos de datos definidos por el usuario, utilizando para ello **\texttt{gen\_allv}**, con la ayuda de la ya nombrada funciónn **\texttt{compose}**(Fig 4) que tiene la siguiente forma.
 
@@ -372,9 +370,7 @@ Además, cuenta con una serie de funciones auxiliares que realizan parte del pro
 
 \pagebreak
 
-### 3.4: Arbitrary
-
-### 3.5: Instancias predefinidas
+### 3.5  Instancias predefinidas
 En este último apartado vamos a repasar las instancias dentro de las clases **\texttt{Sized}** y **\texttt{Allv}** para los tres tipos básicos (**\texttt{Int}**, **\texttt{Char}**y **\texttt{Bool}**) y para los tipos que se deducen directamente de ellos, como es el caso de listas de cualquier tipo ya instanciado en dichas clases o las tuplas de hasta longitud 6.
 
 Adjunto el código donde se instancian dichos tipos en las dos clases que se encuentran en el módulo **\texttt{Sized}**.
@@ -431,9 +427,9 @@ También habíamos pensado incluir dentro del módulo **\texttt{Arbitrary}** las
 
 \pagebreak
 
-# 4. El generador de casos
+# 4  El generador de casos
 
-### 4.1: La interfaz con la UUT
+### 4.1  La interfaz con la UUT
 La interfaz de nuestro programa con la unidad bajo testeo (a partir de ahora UUT siglas correspondientes *Unit Under Testing*) se encuentra dentro del módulo **\texttt{UUT}** (Figura x), dicho módulo es diferente para cada función a probar y contiene la información mínima necesaria para poder hacer todas las pruebas. Además, es generado automáticamente para cada función que vayamos a probar mediante la *IR2Haskell*, que se encarga de traducir la representación de la IR a código Haskell.
 La información presente en la **\texttt{UUT}** es:
 
@@ -447,7 +443,7 @@ La información presente en la **\texttt{UUT}** es:
 
 \pagebreak
 
-### 4.2: La obtención del tipo de la UUT
+### 4.2  La obtención del tipo de la UUT
 Una de las partes más importantes dentro del programa, y la principal causa por la que **\texttt{Template Haskell}** resultó de gran utilidad para el proyecto, es su facultad para analizar los tipos de las funciones y adaptar el generador de casos a ellos, tanto si son tipos predefinidos, como si son definidos por el usuario.
 
 Dentro de **\texttt{TemplateAllv}** se encuentra la funcion  **\texttt{typeInfo}** (Figura x)  que cuyo papel es extraer y sintetizar la información sobre un tipo declarado por el usuario. Esta función recibe como parámetro una variable del tipo **\texttt{DecQ}** y devuelve una tupla dentro de la monada **\texttt{Q}** con la siguiente información:
@@ -482,7 +478,7 @@ Esta funcion consta de 4 pasos o llamadas a otras funciones auxiliares (Figuras 
 
 \pagebreak
 
-### 4.3 La generación de instancias de Allv y Arbitrary
+### 4.3  La generación de instancias de Allv y Arbitrary
 Tras obtener la lista de tipos de datos que se utilizan en la función no definidos por defecto (lo cual corresponde con la segunda parte del apartado anterior) deberemos crear instancias en las dos clases **\texttt{Allv}** y **\texttt{Arbitrary}** para dichos tipos. La generación de instancias se realiza mediante **\texttt{Template Haskell}** dentro de la clase **\texttt{UUTReader}** (Figura x))
 
 En nuestro código realizamos una llamada a las funciones **\texttt{gen\_allv\_str\_list}** y **\texttt{gen\_arbitrary\_str\_listQ}** de las clases **\texttt{TemplateAllv}** y **\texttt{TemplateArbitrary}**, respectivamente. Ambas funciones reciben como párametro una lista de **\texttt{Strings}** que contiene todos los nombres de los tipos definidos por el usuario y a partir de ella crean instancias para cada uno en la clase a la que está dirigida cada función. (**\texttt{Allv}** y **\texttt{Arbitrary}**)
@@ -497,7 +493,7 @@ Analizando dicha función y sus auxiliares podemos observar que son funciones re
 
 \pagebreak
 
-### 4.4: La generación y ejecución de casos
+### 4.4  La generación y ejecución de casos
 La ejecución de los casos de prueba se realiza a través de la función **\texttt{test\_UUT}** que se encarga simplemente de llamar a **\texttt{test}**.
 
 Desde **\texttt{test}** llamaremos a la función **\texttt{prueba}** sobre el conjunto de casos, que en esta versión se generará siempre mediante la función **\texttt{smallest}**, llamada dentro de la cláusula where de **\texttt{test}**. Al haber creado previamente las instancias de las clases **\texttt{Allv}** y **\texttt{Arbitrary}** para todos los tipos definidos por el usuario sabemos que esta llamada será posible independientemente el tipo de los datos (Figura x).
@@ -528,13 +524,13 @@ Por último explicaremos la función auxiliar **\texttt{linkedTupleP}** (Figura 
 
 \pagebreak
 
-# 5.Experimentos
+# 5  Experimentos
 
 \pagebreak
 
-# 6. Related
+# 6  Related
 
-### 6.1: Korat
+### 6.1  Korat
 
 La primera de las herramientas que vamos a tratar en este apartado es **Korat** [@korat], una herramienta de Java que sirve para la generación de casos complejos de prueba a partir de unas restricciones dadas.
 
@@ -563,7 +559,7 @@ El isomorfismo entre candidatos divide el espacio de estados en particiones isom
 
 Además, con el proceso explicado anteriormente para generar el siguiente candidato, teniendo en cuenta la lista de ordenación de los campos, **Korat** se asegura de no generar varios candidatos dentro de la misma partición isomórfica.
 
-### 6.2: Smallcheck
+### 6.2  Smallcheck
 
 La segunda herramienta a tratar en este apartado es **\texttt{Smallcheck}** [@smallcheck] una librería para Haskell usada en el testing basado en propiedades. Esta librería parte de las ideas del **\texttt{Quickcheck}** y perfecciona algunos de los puntos flacos de este.
 
