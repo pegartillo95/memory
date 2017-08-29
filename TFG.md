@@ -318,7 +318,7 @@ Lo cual entraba en conflicto con la manera en la que generábamos las listas de 
 Dadas dos listas la idea es realizar el producto cartesiano de ellas siendo este el resultado de generar todas las parejas con un valor de la primera lista y otro de la segunda. Teniendo en cuenta que ambas pueden ser infinitas, dicho producto deberá ser realizado por diagonales.
 La combinación de listas infinitas podía ser realizada sin problemas usando **\texttt{Generics}**, pero el problema llegaba a la hora de querer devolver los *n* primeros valores de un tamaño menor o igual a *m*, ya que para ello debíamos ordenar la lista infinita y encontramos el problema de que en dichas listas infinitas el número de elementos de un tamaño siempre eran infinito y que siempre habría algún elemento más de tamaño menor o igual a *m*, aunque estuviera después de muchos elementos intermedios que no lo fueran. Este problema nos hizo pensar en utilizar **\texttt{Template Haskell}** en lugar de **\texttt{Generics}**.
 
-En la versión definitiva del programa en la clase **\texttt{TemplateAllv}** se encuentra esta funcionalidad de crear una instancia de **\texttt{Allv}** para los tipos de datos definidos por el usuario, utilizando para ello **\texttt{gen\_allv}**, con la ayuda de la ya nombrada funciónn **\texttt{compose}**(Fig 4) que tiene la siguiente forma.
+En la versión definitiva del programa en la clase **\texttt{TemplateAllv}** se encuentra esta funcionalidad de crear una instancia de **\texttt{Allv}** para los tipos de datos definidos por el usuario, utilizando para ello **\texttt{gen\_allv}**, con la ayuda de la ya nombrada función **\texttt{compose}**(Fig 4) que tiene la siguiente forma.
 
 La función **\texttt{compose}** se encarga de concatenar todas las diagonales en una única lista final, que es la que se devuelve mediante la función **\texttt{allv}**, por otro lado **\texttt{diags}** se encarga de crear una de las diagonales y mientras no sea la última volver a llamarse a sí misma con los parámetros para la siguiente. Los parámetros de la función **\texttt{diags}** son:
 
@@ -396,7 +396,7 @@ Adjunto el código donde se instancian dichos tipos en las dos clases que se enc
 
 Como podemos observar en el caso de la instancia en la clase **\texttt{Sized}**, cualquier elemento de uno de los tres tipos tendrá tamaño uno. En el caso de las instancias de los tres tipos en la clase **\texttt{Allv}**, simplemente debemos indicar el conjunto de valores de dicha clase que serán elegibles a la hora de generar casos de prueba.
 
-A continuación mostramos con las instancias derivadas de tipos ya definidos en **\texttt{Allv}**.
+A continuación mostramos las instancias para las listas y las tuplas de tipos ya definidos en **\texttt{Allv}**.
 
 /////Añadir lista
 
@@ -430,7 +430,7 @@ También habíamos pensado incluir dentro del módulo **\texttt{Arbitrary}** las
 # 4  El generador de casos
 
 ### 4.1  La interfaz con la UUT
-La interfaz de nuestro programa con la unidad bajo testeo (a partir de ahora UUT siglas correspondientes *Unit Under Testing*) se encuentra dentro del módulo **\texttt{UUT}** (Figura x), dicho módulo es diferente para cada función a probar y contiene la información mínima necesaria para poder hacer todas las pruebas. Además, es generado automáticamente para cada función que vayamos a probar mediante la *IR2Haskell*, que se encarga de traducir la representación de la IR a código Haskell.
+La interfaz de nuestro programa con la unidad bajo testeo (a partir de ahora UUT siglas correspondientes *Unit Under Testing*) se encuentra dentro del módulo **\texttt{UUT}** (Figura x), dicho módulo es diferente para cada función a probar y contiene la información mínima necesaria para poder hacer todas las pruebas. Además, es generado automáticamente para cada función que vayamos a probar mediante la aplicación de CAVI-ART *IR2Haskell*, que se encarga de traducir la representación de la IR a código Haskell.
 La información presente en la **\texttt{UUT}** es:
 
 - En primer lugar una función **\texttt{uutNargs}**, que devuelve un entero y que indica el número de argumentos de la función que vamos a probar.
